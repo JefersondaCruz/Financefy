@@ -35,7 +35,7 @@ class AuthService
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
-            'type' => $data['type']
+            'phone' => $data['phone'],
         ]));
     }
 

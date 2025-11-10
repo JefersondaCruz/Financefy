@@ -17,7 +17,7 @@ services:
     networks:
       - backend_net
       - frontend_net
-    profiles: ["app", "all"]
+    profiles: ["app", "front", "all"]
 
   chatbot:
     build:
@@ -60,8 +60,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - HOST=0.0.0.0
+    command: npm run dev -- --host 0.0.0.0
     networks:
       - frontend_net
     profiles: ["front", "all"]
