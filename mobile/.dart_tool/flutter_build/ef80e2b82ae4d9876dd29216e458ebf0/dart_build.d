@@ -1,0 +1,1 @@
+ /home/jeferson/TCC\ TADS/Financefy/mobile/.dart_tool/flutter_build/ef80e2b82ae4d9876dd29216e458ebf0/dart_build_result.json: 

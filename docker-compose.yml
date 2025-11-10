@@ -11,14 +11,13 @@ services:
       - "8000:8000"
     volumes:
       - ./application:/var/www/html
-      -  /var/www/html/vendor
     depends_on:
       - postgres
     command: sh -c "composer install && php artisan config:clear && php artisan serve --host=0.0.0.0 --port=8000"
     networks:
       - backend_net
       - frontend_net
-    profiles: ["app"]
+    profiles: ["app", "front", "all"]
 
   chatbot:
     build:
@@ -31,13 +30,12 @@ services:
       - "8001:8000"
     volumes:
       - ./chatbot:/var/www/html
-      - /var/www/html/vendor
     depends_on:
       - postgres
     command: sh -c "composer install && php artisan config:clear && php artisan serve --host=0.0.0.0 --port=8001"
     networks:
       - backend_net
-    profiles: ["chatbot"]
+    profiles: ["chatbot", "all"]
 
   postgres:
     image: postgres:16-alpine 
@@ -62,11 +60,10 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - HOST=0.0.0.0
+    command: npm run dev -- --host 0.0.0.0
     networks:
       - frontend_net
-    profiles: ["front"]
+    profiles: ["front", "all"]
 
 volumes:
   postgres_data:
