@@ -18,44 +18,34 @@ class TransactionSeeder extends Seeder
         $user = User::first();
         $categories = Category::all();
 
-        $examples = [
-            [
-                'description' => 'Compra de energético',
-                'amount' => 8.50,
-                'type' => 'expense',
-                'payment_method' => 'money',
+        $descriptions = [
+            'income' => [
+                'Salário mensal', 'Freelance site', 'Venda de produto', 'Reembolso de despesas', 'Investimento recebido'
             ],
-            [
-                'description' => 'Salário mensal',
-                'amount' => 3500.00,
-                'type' => 'income',
-                'payment_method' => 'pix',
-            ],
-            [
-                'description' => 'Conta de luz',
-                'amount' => 120.00,
-                'type' => 'expense',
-                'payment_method' => 'credit_card',
-            ],
-            [
-                'description' => 'Freelance website',
-                'amount' => 600.00,
-                'type' => 'income',
-                'payment_method' => 'pix',
+            'expense' => [
+                'Supermercado', 'Restaurante', 'Netflix', 'Energia elétrica', 'Transporte', 'Farmácia',
+                'Gasolina', 'Internet', 'Roupas', 'Cinema', 'Lanche', 'Padaria'
             ],
         ];
 
-        foreach ($examples as $ex) {
-            $category = $categories->where('type', $ex['type'])->random();
+        for ($i = 0; $i < 100; $i++) {
+            $type = fake()->randomElement(['income', 'expense']);
+            $category = $categories->where('type', $type)->random();
+
+            $date = Carbon::now()->subMonths(rand(0, 11))->day(rand(1, 28));
+
+            $amount = $type === 'income'
+                ? fake()->randomFloat(2, 500, 5000)
+                : fake()->randomFloat(2, 10, 800);
 
             Transaction::create([
                 'user_id' => $user->id,
                 'category_id' => $category->id,
-                'description' => $ex['description'],
-                'amount' => $ex['amount'],
-                'transaction_date' => Carbon::now()->subDays(rand(0, 10)),
-                'payment_method' => $ex['payment_method'],
-                'is_recurring' => false,
+                'description' => fake()->randomElement($descriptions[$type]),
+                'amount' => $amount,
+                'payment_method' => fake()->randomElement(['pix', 'money', 'credit_card']),
+                'transaction_date' => $date,
+                'is_recurring' => fake()->boolean(10),
             ]);
         }
     }

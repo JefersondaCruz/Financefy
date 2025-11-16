@@ -1,1 +1,20 @@
-/build/
+.dart_tool/
+.packages
+.pub-cache/
+.build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+build/
+
+ios/Flutter/.last_build_id
+
+.DS_Store
+
+.idea/
+.vscode/
+
+# Android
+android/app/debug
+android/app/profile
+android/app/release

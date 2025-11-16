@@ -7,12 +7,9 @@ use App\Interfaces\Service;
 
 abstract class BaseService implements Service
 {
-    protected BaseRepository $repository;
 
-    public function __construct(BaseRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(protected BaseRepository $repository)
+    {}
 
     public function store(array $data)
     {
@@ -24,9 +21,14 @@ abstract class BaseService implements Service
         return $this->repository->show($id);
     }
 
-    public function update (array $data, string $id)
+    public function update(array $data, string $id)
     {
         return $this->repository->update($data, $id);
+    }
+
+    public function index()
+    {
+        return $this->repository->index();
     }
 
     public function destroy(string $id)

@@ -6,8 +6,8 @@
 
     <aside class="side-menu" :class="{ open: isMenuOpen }">
       <ul>
-        <li @click="goTo('dashboard')">📊 Dashboard</li>
-        <li @click="goTo('profile')">👤 Perfil</li>
+        <li @click="goTo()">📊 Dashboard</li>
+        <li @click="goTo()">👤 Perfil</li>
         <li @click="logout">👋  Sair</li>
       </ul>
     </aside>
@@ -52,21 +52,109 @@
     <section class="transactions-section">
       <h4>Transações Recentes</h4>
 
-      <div v-for="(t, index) in transactions" :key="index" class="transaction-card" :class="t.type">
+      <div v-for="t in transactions" :key="t.id" class="transaction-card" :class="t.category.type">
         <div class="transaction-left">
-          <h5>{{ t.title }}</h5>
-          <span class="category">{{ t.category }} • {{ t.method }}</span>
+          <h5>{{ t.description }}</h5>
+          <span class="category">{{ t.category.name }} • {{ t.payment_method }}</span>
         </div>
         <div class="transaction-right">
-          <p :class="t.type === 'income' ? 'amount-income' : 'amount-expense'">
+          <p :class="t.category.type === 'income' ? 'amount-income' : 'amount-expense'">
             {{ t.amount < 0 ? '-' : '+' }} R$ {{ Math.abs(t.amount).toFixed(2) }}
           </p>
-          <span class="date">{{ formatDate(t.date) }}</span>
+          <span class="date">{{ formatDate(t.transaction_date) }}</span>
         </div>
+        <div class="transaction-actions">
+          <button class="edit-btn" @click="openEditModal(t)">✏️</button>
+          <button class="delete-btn" @click="openDeleteModal(t)">🗑️</button>
+        </div>
+      </div>
+      <div class="pagination">
+        <button
+          class="pagination-btn"
+          @click="prevPage"
+          :disabled="currentPage === 1"
+        >
+          Anterior
+        </button>
+
+        <span>Página {{ currentPage }} de {{ lastPage }}</span>
+
+        <button
+          class="pagination-btn"
+          @click="nextPage"
+          :disabled="currentPage === lastPage"
+        >
+          Próxima
+        </button>
       </div>
     </section>
 
-    <button class="floating-btn">Nova Transação</button>
+    <button class="floating-btn" @click="openModal">
+      Nova Transação
+    </button>
+
+    <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <h2 v-if="isEditing">Editar Transação</h2>
+        <h2 v-else>Nova Transação</h2>
+        <form @submit.prevent="submitTransaction">
+          <label>Categoria</label>
+          <select v-model="form.category_id" required>
+            <option value=0 disabled>Selecione...</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">
+              {{ c.name }}
+            </option>
+          </select>
+
+          <label>Descrição</label>
+          <input type="text" v-model="form.description" required />
+
+          <label>Valor</label>
+          <input type="number" step="0.01" v-model="form.amount" required />
+
+          <label>Data</label>
+          <input type="date" v-model="form.transaction_date" required />
+
+          <label>Método de Pagamento</label>
+          <select v-model="form.payment_method" required>
+            <option value="credit_card">Cartão de Crédito</option>
+            <option value="pix">Pix</option>
+            <option value="money">Dinheiro</option>
+            <option value="others">Outros</option>
+          </select>
+
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="form.is_recurring" />
+            Recorrente?
+          </label>
+
+          <div v-if="form.is_recurring">
+            <label>Tipo de Recorrência</label>
+            <input
+              type="text"
+              v-model="form.recurrence_type"
+              placeholder="ex: mensal, semanal..."
+            />
+          </div>
+
+          <div class="buttons-row">
+            <button type="submit" class="btn-save">Salvar</button>
+            <button type="button" class="btn-cancel" @click="closeModal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div v-if="isDeleteModalOpen" class="modal-overlay" @click="closeDeleteModal">
+      <div class="modal-content" @click.stop>
+        <h3>Tem certeza que deseja excluir?</h3>
+        <p>Essa ação não pode ser desfeita.</p>
+
+        <div class="buttons-row">
+          <button class="btn-cancel" @click="closeDeleteModal">Cancelar</button>
+          <button class="btn-save" @click="confirmDelete">Excluir</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,78 +163,288 @@ import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
+import api from '@/services/api'
+
+interface Transaction {
+  id: number;
+  description: string;
+  amount: number;
+  transaction_date: string;
+  payment_method: string;
+  category_id: number;
+  category: {
+    id: number;
+    name: string;
+    type: 'income' | 'expense';
+  };
+  is_recurring: boolean;
+  recurrence_type: string | null;
+}
+
+
+interface PaginatedResponse<T> {
+  current_page: number
+  data: T[]
+  per_page: number
+  total: number
+  last_page: number
+}
+
+interface Category {
+  id: number
+  name: string
+}
 
 const isMenuOpen = ref(false);
+const isModalOpen = ref(false);
 const auth = useAuthStore()
+const transactions = ref<Transaction[]>([]);
+const categories = ref<Category[]>([]);
+const currentPage = ref(1)
+const lastPage = ref(1)
+const total = ref(0)
+const perPage = ref(10)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+const isDeleteModalOpen = ref(false)
+const deleteId = ref<number | null>(null)
+const financeChart = ref<Chart | null>(null);
 
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
+const openEditModal = (t: Transaction) => {
+  isEditing.value = true
+  editingId.value = t.id
 
+  form.value = {
+    category_id: t.category_id,
+    description: t.description,
+    amount: t.amount,
+    transaction_date: t.transaction_date,
+    payment_method: t.payment_method,
+    is_recurring: t.is_recurring ?? false,
+    recurrence_type: t.recurrence_type ?? null,
+  };
+
+  isModalOpen.value = true;
 };
 
-const logout = () => {
-  return auth.logout()
 
+const form = ref({
+  category_id: 0,
+  description: "",
+  amount: 0,
+  transaction_date: "",
+  payment_method: "pix",
+  is_recurring: false,
+  recurrence_type: null as string | null,
+})
+
+const getChartData = (transactions: Transaction[]) => {
+  const monthlyData: Record<string, { income: number; expense: number }> = {};
+
+  transactions.forEach(t => {
+    const monthKey = new Date(t.transaction_date).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+    if (!monthlyData[monthKey]) monthlyData[monthKey] = { income: 0, expense: 0 };
+    if (t.category.type === "income") monthlyData[monthKey].income += t.amount;
+    else monthlyData[monthKey].expense += Math.abs(t.amount);
+  });
+
+  const sortedMonths = Object.keys(monthlyData).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  ).slice(-6);
+
+  return {
+    labels: sortedMonths,
+    incomes: sortedMonths.map(month => monthlyData[month]?.income || 0),
+    expenses: sortedMonths.map(month => monthlyData[month]?.expense || 0),
+  };
 };
 
-const goTo = (page: string) => {
-  if (page === 'profile') {
-    router.push('/profile')
-    return
-  }
-  toggleMenu();
-};
-
-const transactions = ref([
-  { title: "Mercado", date: "2025-11-01", amount: -120.5, method: "Pix", category: "Alimentação", type: "expense" },
-  { title: "Salário", date: "2025-11-05", amount: 5000.0, method: "Transferência", category: "Salário", type: "income" },
-  { title: "Netflix", date: "2025-11-02", amount: -39.9, method: "Cartão", category: "Lazer", type: "expense" },
-  { title: "Gasolina", date: "2025-11-03", amount: -250.0, method: "Pix", category: "Transporte", type: "expense" },
-  { title: "Freelance", date: "2025-11-07", amount: 1500.0, method: "Pix", category: "Freelance", type: "income" },
-  { title: "Academia", date: "2025-11-08", amount: -120.0, method: "Cartão", category: "Saúde", type: "expense" },
-  { title: "Restaurante", date: "2025-11-09", amount: -85.0, method: "Cartão", category: "Alimentação", type: "expense" },
-]);
-
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-};
-
-onMounted(() => {
+const renderChart = () => {
   const ctx = document.getElementById("financeChart") as HTMLCanvasElement;
-  new Chart(ctx, {
-    type: "line",
+  const { labels, incomes, expenses } = getChartData(transactions.value);
+
+  if (financeChart.value) financeChart.value.destroy();
+
+  financeChart.value = new Chart(ctx, {
+    type: "bar",
     data: {
-      labels: ["Jun", "Jul", "Ago", "Set", "Out", "Nov"],
+      labels,
       datasets: [
         {
           label: "Receitas",
-          data: [5000, 5500, 5200, 5300, 5600, 6800],
-          borderColor: "#00d084",
-          tension: 0.3,
+          data: incomes,
+          backgroundColor: "#00d084",
+          borderRadius: 6,
         },
         {
           label: "Despesas",
-          data: [3000, 3500, 3400, 3600, 3700, 1900],
-          borderColor: "#ff4d4d",
-          tension: 0.3,
+          data: expenses,
+          backgroundColor: "#ff4d4d",
+          borderRadius: 6,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
-      resizeDelay: 200,
-      plugins: { legend: { labels: { color: "#ccc" } } },
-      scales: {
-        x: { ticks: { color: "#aaa" } },
-        y: { ticks: { color: "#aaa" } },
+      plugins: {
+        legend: { labels: { color: "#ccc" } },
+        tooltip: {
+          enabled: true,
+          callbacks: {
+            label: function(context) {
+              const value = context.parsed.y ?? 0;
+              return context.dataset.label + ': R$ ' + value.toFixed(2);
+            }
+          }
+        }
       },
+      scales: {
+        x: { ticks: { color: "#aaa" }, grid: { display: false } },
+        y: {
+          ticks: { color: "#aaa", callback: (v) => `R$ ${v}` },
+          grid: { color: "#333" }
+        },
+      }
     },
   });
-});
+};
 
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+};
+
+const logout = () => {
+  return auth.logout()
+};
+
+const submitTransaction = async () => {
+  if (isEditing.value) {
+    await updateTransaction()
+  } else {
+    await createTransaction()
+  }
+}
+
+const updateTransaction = async () => {
+  try {
+    await api.put(`/transactions/${editingId.value}`, form.value)
+    closeModal()
+    await fetchTransactions(currentPage.value)
+    renderChart()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+
+const openDeleteModal = (t: Transaction) => {
+  deleteId.value = t.id
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  deleteId.value = null
+}
+
+const confirmDelete = async () => {
+  try {
+    await api.delete(`/transactions/${deleteId.value}`)
+    closeDeleteModal()
+    await fetchTransactions(currentPage.value)
+    renderChart()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const goTo = () => {
+    router.push('/under-construction')
+    return
+};
+
+const fetchTransactions = async (page = 1) => {
+  try {
+    const { data } = await api.get<PaginatedResponse<Transaction>>('/transactions', {
+      params: { page, per_page: perPage.value },
+    })
+    transactions.value = data.data
+    currentPage.value = data.current_page
+    lastPage.value = data.last_page
+    total.value = data.total
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < lastPage.value) {
+    fetchTransactions(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    fetchTransactions(currentPage.value - 1)
+  }
+}
+
+const openModal = () => {
+  isModalOpen.value = true;
+}
+
+const closeModal = () => {
+  isModalOpen.value = false
+  isEditing.value = false
+  editingId.value = null
+  resetForm()
+}
+
+
+const resetForm = () => {
+  form.value = {
+    category_id: 0,
+    description: "",
+    amount: 0,
+    transaction_date: "",
+    payment_method: "pix",
+    is_recurring: false,
+    recurrence_type: null,
+  };
+}
+
+const fetchCategories = async () => {
+  try {
+    const { data } = await api.get("/categories");
+    categories.value = data;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const createTransaction = async () => {
+  try {
+    await api.post("/transactions", form.value);
+    closeModal();
+    await fetchTransactions(currentPage.value);
+    renderChart()
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+};
+
+onMounted(async () => {
+  await fetchTransactions();
+  await fetchCategories();
+  renderChart();
+});
 </script>
 
 <style scoped>
@@ -290,8 +588,8 @@ onMounted(() => {
 
 .chart-section canvas {
   flex: 1;
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  height: 100%;
   max-height: 100%;
   object-fit: contain;
 }
@@ -380,6 +678,156 @@ body, html {
   color: #aaa;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pagination-btn {
+  background-color: #00a86b;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #00d084;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: #1a1d29;
+  padding: 2rem;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #00d084;
+}
+
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #0f111a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.modal-content label {
+  margin-bottom: 0.4rem;
+  display: block;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.buttons-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.buttons-row button {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-save {
+  background: #00a86b;
+}
+
+.btn-save:hover {
+  background: #00d084;
+}
+
+.btn-cancel {
+  background: #ff4d4d;
+}
+
+.btn-cancel:hover {
+  background: #ff6b6b;
+}
+
+.transaction-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.edit-btn,
+.delete-btn {
+  background: #232736;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: #00a86b;
+}
+
+.delete-btn:hover {
+  background: #ff4d4d;
+}
+
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 1rem;
@@ -393,5 +841,4 @@ body, html {
     height: 300px;
   }
 }
-
 </style>
