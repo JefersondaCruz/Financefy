@@ -3,6 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:finance_ap/views/pages/under_construction_page.dart';
+import 'package:finance_ap/services/dashboard_service.dart';
+
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -12,67 +14,11 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  final DashboardService _dashboardService = DashboardService();
   String selectedPeriod = 'Novembro 2025';
   int touchedIndex = -1;
 
-  final List<Map<String, dynamic>> transactions = [
-    {
-      'title': 'Mercado',
-      'date': '2025-11-01',
-      'amount': -120.50,
-      'method': 'Pix',
-      'category': 'Alimentação',
-      'type': 'expense',
-    },
-    {
-      'title': 'Salário',
-      'date': '2025-11-05',
-      'amount': 5000.00,
-      'method': 'Transferência',
-      'category': 'Salário',
-      'type': 'income',
-    },
-    {
-      'title': 'Netflix',
-      'date': '2025-11-02',
-      'amount': -39.90,
-      'method': 'Cartão',
-      'category': 'Lazer',
-      'type': 'expense',
-    },
-    {
-      'title': 'Gasolina',
-      'date': '2025-11-03',
-      'amount': -250.00,
-      'method': 'Pix',
-      'category': 'Transporte',
-      'type': 'expense',
-    },
-    {
-      'title': 'Freelance',
-      'date': '2025-11-07',
-      'amount': 1500.00,
-      'method': 'Pix',
-      'category': 'Freelance',
-      'type': 'income',
-    },
-    {
-      'title': 'Academia',
-      'date': '2025-11-08',
-      'amount': -120.00,
-      'method': 'Cartão',
-      'category': 'Saúde',
-      'type': 'expense',
-    },
-    {
-      'title': 'Restaurante',
-      'date': '2025-11-09',
-      'amount': -85.00,
-      'method': 'Cartão',
-      'category': 'Alimentação',
-      'type': 'expense',
-    },
-  ];
+  final List<Map<String, dynamic>> transactions = [];
 
   double get totalExpenses => transactions
       .where((t) => t['type'] == 'expense')
@@ -82,19 +28,89 @@ class _DashboardPageState extends State<DashboardPage> {
       .where((t) => t['type'] == 'income')
       .fold(0.0, (sum, t) => sum + (t['amount'] as double));
 
-  double get balance => totalIncome - totalExpenses;
-
-  double get savingsRate => totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
-
-  Map<String, double> get expensesByCategory {
-    final Map<String, double> result = {};
-    for (var t in transactions.where((t) => t['type'] == 'expense')) {
-      final category = t['category'] as String;
-      final amount = (t['amount'] as double).abs();
-      result[category] = (result[category] ?? 0) + amount;
-    }
-    return result;
+  Future<void> _loadTransactions() async {
+  setState(() => isLoading = true);
+  try {
+    final data = await _dashboardService.transactions();
+    final list = (data['data'] as List).cast<Map<String, dynamic>>();
+    setState(() {
+      transactions
+        ..clear()
+        ..addAll(list);
+    });
+  } catch (e) {
+    debugPrint('Erro ao carregar transações: $e');
+  } finally {
+    setState(() => isLoading = false);
   }
+}
+
+Map<String, Map<String, double>> _groupTransactionsByMonth() {
+  final Map<String, Map<String, double>> monthlyData = {};
+
+  for (final t in transactions) {
+    final date = DateTime.parse(t['date']);
+    final monthKey = DateFormat('MM/yyyy').format(date);
+
+    final isIncome = t['type'] == 'income';
+    final amount = (t['amount'] as double);
+
+    monthlyData.putIfAbsent(monthKey, () => {
+      'income': 0.0,
+      'expense': 0.0,
+    });
+
+    if (isIncome) {
+      monthlyData[monthKey]!['income'] =
+          monthlyData[monthKey]!['income']! + amount;
+    } else {
+      monthlyData[monthKey]!['expense'] =
+          monthlyData[monthKey]!['expense']! + amount.abs();
+    }
+  }
+
+  final sortedKeys = monthlyData.keys.toList()
+    ..sort((a, b) {
+      final da = DateFormat('MM/yyyy').parse(a);
+      final db = DateFormat('MM/yyyy').parse(b);
+      return da.compareTo(db);
+    });
+
+  final Map<String, Map<String, double>> sortedData = {};
+  for (final key in sortedKeys) {
+    sortedData[key] = monthlyData[key]!;
+  }
+  return sortedData;
+}
+
+
+  Widget _buildLegendItem(String label, Color color) {
+  return Row(
+    children: [
+      Container(
+        width: 16,
+        height: 3,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        label,
+        style: const TextStyle(color: Colors.white70, fontSize: 12),
+      ),
+    ],
+  );
+}
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  bool isLoading = true;
 
   @override
   Widget build(BuildContext context) {
@@ -111,10 +127,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   _buildKPICards(),
                   const SizedBox(height: 24),
-                  _buildEvolutionChart(),
-                  const SizedBox(height: 24),
-                  _buildCategoryBreakdown(),
-                  const SizedBox(height: 24),
+                  _buildMonthlyBarChart(),
                   _buildRecentTransactions(),
                   const SizedBox(height: 80),
                 ],
@@ -207,25 +220,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ),
-      actions: [
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.calendar_month),
-          onSelected: (value) => setState(() => selectedPeriod = value),
-          itemBuilder: (context) => [
-            'Novembro 2025',
-            'Outubro 2025',
-            'Setembro 2025',
-            'Últimos 3 meses',
-            'Últimos 6 meses',
-            'Ano 2025'
-          ].map((period) => PopupMenuItem(value: period, child: Text(period))).toList(),
-        ),
-        IconButton(
-          icon: const Icon(Icons.file_download),
-          onPressed: () {},
-          tooltip: 'Exportar Relatório',
-        ),
-      ],
     );
   }
 
@@ -258,31 +252,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildKPICard(
-                'Saldo',
-                'R\$ ${balance.toStringAsFixed(2)}',
-                balance > 0 ? 'Positivo' : 'Negativo',
-                Icons.account_balance_wallet,
-                balance > 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                balance > 0,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildKPICard(
-                'Taxa de Economia',
-                '${savingsRate.toStringAsFixed(1)}%',
-                savingsRate >= 20 ? 'Excelente!' : 'Pode melhorar',
-                Icons.savings,
-                savingsRate >= 20 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                savingsRate >= 20,
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -348,309 +317,140 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildEvolutionChart() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF242837),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Evolução Financeira',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Receitas vs Despesas (Últimos 6 meses)',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 220,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 1000,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white10,
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 50,
-                      interval: 2000,
-                      getTitlesWidget: (value, meta) => Text(
-                        'R\$ ${(value / 1000).toStringAsFixed(0)}k',
-                        style: const TextStyle(color: Colors.white54, fontSize: 10),
-                      ),
+  Widget _buildMonthlyBarChart() {
+  if (transactions.isEmpty) {
+    return const SizedBox();
+  }
+
+  final data = _groupTransactionsByMonth();
+  final months = data.keys.toList();
+  final incomes = months.map((m) => data[m]!['income']!).toList();
+  final expenses = months.map((m) => data[m]!['expense']!).toList();
+
+
+  final maxY = ([
+  ...incomes,
+  ...expenses
+].fold<double>(0, (p, c) => c > p ? c : p)) * 1.3;
+
+double _getNiceInterval(double maxY) {
+  if (maxY <= 500) return 100;
+  if (maxY <= 1000) return 200;
+  if (maxY <= 5000) return 500;
+  if (maxY <= 10000) return 1000;
+  return maxY / 5;
+}
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF242837),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Receitas x Despesas por mês",
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+
+        SizedBox(
+          height: 260,
+          child: BarChart(
+            BarChartData(
+              maxY: ([
+                ...incomes,
+                ...expenses
+              ].fold<double>(0, (p, c) => c > p ? c : p)) * 1.3,
+
+              barGroups: List.generate(months.length, (i) {
+                return BarChartGroupData(
+                  x: i,
+                  barsSpace: 10,
+                  barRods: [
+                    BarChartRodData(
+                      toY: incomes[i],
+                      color: const Color(0xFF10B981),
+                      width: 14,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      getTitlesWidget: (value, meta) {
-                        const months = ['Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov'];
-                        if (value.toInt() >= 0 && value.toInt() < months.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              months[value.toInt()],
-                              style: const TextStyle(color: Colors.white54, fontSize: 10),
-                            ),
-                          );
-                        }
+                    BarChartRodData(
+                      toY: expenses[i],
+                      color: const Color(0xFFEF4444),
+                      width: 14,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                );
+              }),
+
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 45,
+                    interval: _getNiceInterval(maxY),
+                    getTitlesWidget: (value, meta) {
+                      if (value == 0 || value % _getNiceInterval(maxY) != 0) {
                         return const SizedBox();
-                      },
-                    ),
+                      }
+                      return Text(
+                        "R\$ ${value.toInt()}",
+                        style: const TextStyle(color: Colors.white54, fontSize: 10),
+                      );
+                    },
                   ),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 5,
-                minY: 0,
-                maxY: 8000,
-                lineBarsData: [
-                  // Linha de Receitas
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 4500),
-                      FlSpot(1, 5200),
-                      FlSpot(2, 4800),
-                      FlSpot(3, 5500),
-                      FlSpot(4, 5000),
-                      FlSpot(5, 6500),
-                    ],
-                    isCurved: true,
-                    color: const Color(0xFF10B981),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: true),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFF10B981).withOpacity(0.1),
-                    ),
-                  ),
-                  // Linha de Despesas
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 3200),
-                      FlSpot(1, 3800),
-                      FlSpot(2, 3500),
-                      FlSpot(3, 4200),
-                      FlSpot(4, 3900),
-                      FlSpot(5, 615),
-                    ],
-                    isCurved: true,
-                    color: const Color(0xFFEF4444),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: true),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFFEF4444).withOpacity(0.1),
-                    ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                enabled: true,
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipItems: (touchedSpots) {
-                    return touchedSpots.map((spot) {
-                      return LineTooltipItem(
-                        'R\$ ${spot.y.toStringAsFixed(0)}',
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value < 0 || value >= months.length) return const SizedBox();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          months[value.toInt()],
+                          style: const TextStyle(color: Colors.white70, fontSize: 10),
                         ),
                       );
-                    }).toList();
-                  },
-                ),
-              ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Receitas', const Color(0xFF10B981)),
-              const SizedBox(width: 24),
-              _buildLegendItem('Despesas', const Color(0xFFEF4444)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 3,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryBreakdown() {
-    final expenses = expensesByCategory;
-    final total = expenses.values.fold(0.0, (sum, val) => sum + val);
-    final sortedEntries = expenses.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF242837),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Gastos por Categoria',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              SizedBox(
-                height: 180,
-                width: 180,
-                child: PieChart(
-                  PieChartData(
-                    pieTouchData: PieTouchData(
-                      touchCallback: (event, response) {
-                        setState(() {
-                          if (!event.isInterestedForInteractions || response == null || response.touchedSection == null) {
-                            touchedIndex = -1;
-                            return;
-                          }
-                          touchedIndex = response.touchedSection!.touchedSectionIndex;
-                        });
-                      },
-                    ),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 50,
-                    sections: _buildPieChartSections(sortedEntries, total),
+                    },
                   ),
                 ),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: sortedEntries.take(5).map((entry) {
-                    final percentage = (entry.value / total * 100);
-                    final color = _getCategoryColor(entry.key);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.key,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'R\$ ${entry.value.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '${percentage.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: Colors.white12,
+                  strokeWidth: 1,
                 ),
               ),
-            ],
+
+              borderData: FlBorderData(show: false),
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  List<PieChartSectionData> _buildPieChartSections(List<MapEntry<String, double>> entries, double total) {
-    return entries.asMap().entries.map((item) {
-      final index = item.key;
-      final entry = item.value;
-      final isTouched = index == touchedIndex;
-      final radius = isTouched ? 65.0 : 55.0;
-      final percentage = (entry.value / total * 100);
-
-      return PieChartSectionData(
-        color: _getCategoryColor(entry.key),
-        value: entry.value,
-        title: '${percentage.toStringAsFixed(0)}%',
-        radius: radius,
-        titleStyle: TextStyle(
-          fontSize: isTouched ? 14 : 11,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
         ),
-      );
-    }).toList();
-  }
+
+        const SizedBox(height: 20),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildLegendItem("Receitas", const Color(0xFF10B981)),
+            const SizedBox(width: 20),
+            _buildLegendItem("Despesas", const Color(0xFFEF4444)),
+          ],
+        )
+      ],
+    ),
+  );
+}
 
   Color _getCategoryColor(String category) {
     final colors = {
@@ -687,10 +487,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('Ver todas'),
               ),
             ],
           ),

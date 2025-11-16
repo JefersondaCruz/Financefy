@@ -33,6 +33,11 @@ abstract class BaseRepository implements Repository
         return $user->fresh();
     }
 
+    public function index()
+    {
+        return $this->model->all();
+    }
+
     public function destroy(string $id)
     {
         $this->show($id)->delete();

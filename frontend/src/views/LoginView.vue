@@ -1,31 +1,31 @@
 <template>
-  <div class="d-flex justify-content-center align-items-center vh-100 bg-light">
-    <AppCard class="w-100" style="max-width: 400px">
-      <h4 class="text-center mb-3">Login</h4>
+  <div class="login-page">
+    <div class="login-card">
+      <h2 class="app-title">Financefy</h2>
 
-      <AppInput label="Email" type="email" v-model="email" />
-      <AppInput label="Senha" type="password" v-model="password" />
+      <AppInput label="Email" type="email" v-model="email" class="input-dark" />
+      <AppInput label="Senha" type="password" v-model="password" class="input-dark" />
 
-      <p v-if="errorMessage" class="text-danger text-center mt-2">
-        {{ errorMessage }}
-      </p>
+      <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
-      <AppButton :loading="loading" @click="handleLogin" class="w-100 mt-3">
+      <AppButton :loading="loading" @click="handleLogin" class="btn-green">
         Entrar
       </AppButton>
 
-      <p class="text-center mt-3">
+      <p class="register-text">
         Não tem conta?
-        <router-link to="/register">Registre-se</router-link>
+        <router-link to="/register" class="register-link">
+          Cadastre-se
+        </router-link>
       </p>
-    </AppCard>
+    </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import AppCard from '@/components/AppCard.vue'
 import AppInput from '@/components/AppInput.vue'
 import AppButton from '@/components/AppButton.vue'
 import type { AxiosError } from 'axios'
@@ -59,3 +59,67 @@ const handleLogin = async () => {
   }
 }
 </script>
+
+<style scoped>
+.login-page {
+  background-color: #1e1e2c;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 32px;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 16px;
+}
+
+.app-title {
+  text-align: center;
+  color: #00ff9a;
+  font-size: 32px;
+  margin-bottom: 28px;
+  font-weight: bold;
+}
+
+.input-dark :deep(input) {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.input-dark :deep(label) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.error-msg {
+  color: #ff6b6b;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.btn-green {
+  background-color: #00ff9a !important;
+  color: #000 !important;
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.register-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 18px;
+}
+
+.register-link {
+  color: #00ff9a;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+</style>

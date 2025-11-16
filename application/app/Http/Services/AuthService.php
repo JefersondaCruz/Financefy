@@ -31,6 +31,7 @@ class AuthService
 
     public function register(array $data)
     {
+        // TODO: retornar token e alterar no flutter e vue
         return new UserResource($this->userService->store([
             'name' => $data['name'],
             'email' => $data['email'],

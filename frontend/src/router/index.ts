@@ -4,8 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import DashboardView from '@/views/DashboardView.vue'
-import ProfileView from '@/views/ProfileView.vue'
-
+import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/login' },
@@ -16,10 +15,11 @@ const routes: RouteRecordRaw[] = [
     component: DashboardView,
     meta: { requiresAuth: true },
   },
-  { path: '/profile',
-    component:ProfileView,
+  { path: '/under-construction',
+    component:UnderConstructionView,
     meta: { requiresAuth: true }
   },
+
 ]
 
 const router = createRouter({
