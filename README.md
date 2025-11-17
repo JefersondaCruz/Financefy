@@ -3,7 +3,6 @@
 > Status do Projeto: :warning: em desenvolvimento
 
 ###
- <h2> 🚧 EM CONSTRUÇÃO 🚧 </h2>
 
 # API Documentation
 
