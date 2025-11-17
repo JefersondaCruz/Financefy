@@ -21,26 +21,14 @@
     <section class="metrics">
       <div class="card negative">
         <h4>Despesas</h4>
-        <p class="value">R$ 615.40</p>
+        <p class="value">R$ {{ totalExpenses.toFixed(2) }}</p>
         <span class="info">+12,5% vs mês anterior</span>
       </div>
 
       <div class="card positive">
         <h4>Receitas</h4>
-        <p class="value">R$ 6500.00</p>
+        <p class="value">R$ {{ totalIncome.toFixed(2) }}</p>
         <span class="info">+8,2% vs mês anterior</span>
-      </div>
-
-      <div class="card neutral">
-        <h4>Saldo</h4>
-        <p class="value">R$ 5884.60</p>
-        <span class="info">Positivo</span>
-      </div>
-
-      <div class="card excellent">
-        <h4>Taxa de Economia</h4>
-        <p class="value">90.5%</p>
-        <span class="info">Excelente!</span>
       </div>
     </section>
 
@@ -58,9 +46,11 @@
           <span class="category">{{ t.category.name }} • {{ t.payment_method }}</span>
         </div>
         <div class="transaction-right">
-          <p :class="t.category.type === 'income' ? 'amount-income' : 'amount-expense'">
-            {{ t.amount < 0 ? '-' : '+' }} R$ {{ Math.abs(t.amount).toFixed(2) }}
-          </p>
+          <div class="amount-wrapper">
+            <p :class="t.category.type === 'income' ? 'amount-income' : 'amount-expense'">
+              {{ t.amount < 0 ? '-' : '+' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
+            </p>
+        </div>
           <span class="date">{{ formatDate(t.transaction_date) }}</span>
         </div>
         <div class="transaction-actions">
@@ -159,11 +149,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import Chart from "chart.js/auto";
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 import api from '@/services/api'
+
 
 interface Transaction {
   id: number;
@@ -226,6 +217,16 @@ const openEditModal = (t: Transaction) => {
 
   isModalOpen.value = true;
 };
+
+const totalExpenses = computed(() => {
+  return transactions.value?.filter(t => t.category.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount), 0) ?? 0;
+});
+
+const totalIncome = computed(() => {
+  return transactions.value?.filter(t => t.category.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount), 0) ?? 0;
+});
 
 
 const form = ref({
@@ -565,6 +566,7 @@ onMounted(async () => {
 
 .card .info {
   font-size: 0.9rem;
+  color: #aaa;
 }
 
 .card.negative .value { color: #ff4d4d; }
@@ -660,7 +662,9 @@ body, html {
 }
 
 .transaction-right {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .amount-income {
@@ -677,6 +681,16 @@ body, html {
   font-size: 0.85rem;
   color: #aaa;
 }
+
+.amount-wrapper {
+  width: 100%;
+  text-align: right;
+}
+
+.amount-income, .amount-expense {
+  font-family: 'Courier New', monospace;
+}
+
 
 .pagination {
   display: flex;
