@@ -10,9 +10,16 @@ class ApiClient {
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
     final url = Uri.parse('$_baseUrl/$endpoint');
 
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        },
       body: jsonEncode(data),
     );
 
@@ -23,25 +30,33 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> get(String endpoint) async {
-    final url = Uri.parse('$_baseUrl/$endpoint');
+  Future<List<dynamic>> get(String endpoint) async {
+  final url = Uri.parse('$_baseUrl/$endpoint');
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('auth_token');
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json', 
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-        }
-    );
+  final response = await http.get(
+    url,
+    headers: {
+      'Content-Type': 'application/json', 
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    },
+  );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+  if (response.statusCode >= 200 && response.statusCode < 300) {
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
+      return (decoded['data'] as List).cast<Map<String, dynamic>>();
+    } else if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
     } else {
-      throw ApiException('Erro: ${response.statusCode}', response.body);
+      throw ApiException('Formato de resposta inesperado', response.body);
     }
+  } else {
+    throw ApiException('Erro: ${response.statusCode}', response.body);
   }
+}
 }

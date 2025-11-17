@@ -6,9 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:finance_ap/utils/validators.dart';
 
 class LoginPage extends StatefulWidget {
-  final VoidCallback onRegisterClicked;
+  final VoidCallback? onRegisterClicked;
 
-  const LoginPage({super.key, required this.onRegisterClicked});
+  const LoginPage({super.key, this.onRegisterClicked});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
