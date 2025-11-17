@@ -4,6 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:finance_ap/views/pages/under_construction_page.dart';
 import 'package:finance_ap/services/dashboard_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:finance_ap/views/pages/login_page.dart';
+import 'package:finance_ap/views/widgets/transaction_modal.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -29,21 +32,33 @@ class _DashboardPageState extends State<DashboardPage> {
       .fold(0.0, (sum, t) => sum + (t['amount'] as double));
 
   Future<void> _loadTransactions() async {
-  setState(() => isLoading = true);
-  try {
-    final data = await _dashboardService.transactions();
-    final list = (data['data'] as List).cast<Map<String, dynamic>>();
-    setState(() {
-      transactions
-        ..clear()
-        ..addAll(list);
-    });
-  } catch (e) {
-    debugPrint('Erro ao carregar transações: $e');
-  } finally {
-    setState(() => isLoading = false);
+    setState(() => isLoading = true);
+    try {
+      final list = await _dashboardService.transactions();
+
+      final mapped = list.map((t) {
+        return {
+          "id": t["id"],
+          "title": t["description"],
+          "amount": double.parse(t["amount"].toString()),
+          "date": t["transaction_date"],
+          "method": t["payment_method"],
+          "category": t["category"]["name"],
+          "type": t["category"]["type"],
+        };
+      }).toList();
+
+      setState(() {
+        transactions
+          ..clear()
+          ..addAll(mapped);
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar transações: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
-}
 
 Map<String, Map<String, double>> _groupTransactionsByMonth() {
   final Map<String, Map<String, double>> monthlyData = {};
@@ -137,11 +152,21 @@ Map<String, Map<String, double>> _groupTransactionsByMonth() {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF10B981),
-        icon: const Icon(Icons.add),
-        label: const Text('Nova Transação'),
-      ),
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) => TransactionModal(
+            onTransactionCreated: () async {
+              await _loadTransactions();
+            },
+          ),
+        );
+      },
+      backgroundColor: const Color(0xFF10B981),
+      icon: const Icon(Icons.add),
+      label: const Text('Nova Transação'),
+    ),
       drawer: Drawer(
         backgroundColor: const Color(0xFF1E1E2C),
         child: ListView(
@@ -188,10 +213,19 @@ Map<String, Map<String, double>> _groupTransactionsByMonth() {
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.white70),
               title: const Text('Sair', style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
+
+                await _logoutUser();
+                if (!mounted) return;
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
               },
             ),
+
           ],
         ),
       ),
@@ -222,6 +256,12 @@ Map<String, Map<String, double>> _groupTransactionsByMonth() {
       ),
     );
   }
+
+  Future<void> _logoutUser() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('token');
+}
+
 
   Widget _buildKPICards() {
     return Column(
