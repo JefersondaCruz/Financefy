@@ -1,177 +1,285 @@
 <template>
-  <div class="dashboard">
-    <button class="menu-btn" @click="toggleMenu">
+  <div class="min-h-screen bg-[#0f172a] text-white flex flex-col gap-8 px-6 py-6 md:px-12">
+
+    <!-- ── Hamburger ── -->
+    <button
+      class="fixed top-5 left-5 z-[1001] bg-[#1e293b] text-white text-2xl px-3 py-1 rounded-lg hover:bg-[#00d084] transition-colors"
+      @click="toggleMenu"
+    >
       ☰
     </button>
 
-    <aside class="side-menu" :class="{ open: isMenuOpen }">
-      <ul>
-        <li @click="goTo()">📊 Dashboard</li>
-        <li @click="goTo()">👤 Perfil</li>
-        <li @click="logout">👋  Sair</li>
+    <!-- ── Side Menu ── -->
+    <aside
+      class="fixed top-0 h-full w-[230px] bg-[#1e293b] shadow-xl pt-[70px] z-[1000] transition-all duration-300"
+      :class="isMenuOpen ? 'left-0' : '-left-[250px]'"
+    >
+      <ul class="list-none p-0 m-0">
+        <li
+          v-for="item in menuItems"
+          :key="item.label"
+          class="px-6 py-4 text-[#ccc] text-lg cursor-pointer hover:bg-[#00d084] hover:text-white transition-colors"
+          @click="item.action"
+        >
+          {{ item.icon }} {{ item.label }}
+        </li>
       </ul>
     </aside>
 
-    <div v-if="isMenuOpen" class="overlay" @click="toggleMenu"></div>
+    <!-- ── Overlay ── -->
+    <div
+      v-if="isMenuOpen"
+      class="fixed inset-0 bg-black/40 z-[999]"
+      @click="toggleMenu"
+    />
 
-    <header class="header">
-      <h2>Dashboard Financeiro</h2>
+    <!-- ── Header ── -->
+    <header class="flex items-center justify-between bg-[#1e293b] rounded-xl px-6 py-4 pl-14">
+      <div>
+        <h2 class="text-2xl font-bold text-white m-0">Dashboard</h2>
+        <p class="text-[#94a3b8] text-sm mt-1 m-0">Visão geral de Fevereiro 2026</p>
+      </div>
+      <button
+        class="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+        @click="openModal"
+      >
+        💬 Nova Transação
+      </button>
     </header>
 
-    <section class="metrics">
-      <div class="card negative">
-        <h4>Despesas</h4>
-        <p class="value">R$ {{ totalExpenses.toFixed(2) }}</p>
-        <span class="info">+12,5% vs mês anterior</span>
+    <!-- ── KPI Cards ── -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-[#1e293b] rounded-xl p-5 shadow-md">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-sm text-[#94a3b8] mb-1">Despesas Totais</p>
+            <h3 class="text-2xl font-bold text-[#f43f5e]">R$ {{ totalExpenses.toFixed(2) }}</h3>
+          </div>
+          <div class="p-2 bg-[#f43f5e]/10 rounded-lg text-xl">📉</div>
+        </div>
+        <div class="flex items-center gap-2 mt-4 text-sm">
+          <span class="text-[#f43f5e] font-semibold">↑ +12%</span>
+          <span class="text-[#64748b]">vs mês anterior</span>
+        </div>
       </div>
 
-      <div class="card positive">
-        <h4>Receitas</h4>
-        <p class="value">R$ {{ totalIncome.toFixed(2) }}</p>
-        <span class="info">+8,2% vs mês anterior</span>
+      <div class="bg-[#1e293b] rounded-xl p-5 shadow-md">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-sm text-[#94a3b8] mb-1">Receitas Totais</p>
+            <h3 class="text-2xl font-bold text-[#10b981]">R$ {{ totalIncome.toFixed(2) }}</h3>
+          </div>
+          <div class="p-2 bg-[#10b981]/10 rounded-lg text-xl">📈</div>
+        </div>
+        <div class="flex items-center gap-2 mt-4 text-sm">
+          <span class="text-[#10b981] font-semibold">↑ +8%</span>
+          <span class="text-[#64748b]">vs mês anterior</span>
+        </div>
+      </div>
+
+      <div class="bg-[#1e293b] rounded-xl p-5 shadow-md">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-sm text-[#94a3b8] mb-1">Saldo Líquido</p>
+            <h3 class="text-2xl font-bold" :class="netBalance >= 0 ? 'text-[#3b82f6]' : 'text-[#f43f5e]'">
+              R$ {{ netBalance.toFixed(2) }}
+            </h3>
+          </div>
+          <div class="p-2 bg-[#3b82f6]/10 rounded-lg text-xl">💰</div>
+        </div>
+        <div class="flex items-center gap-2 mt-4 text-sm">
+          <span class="text-[#3b82f6] font-semibold">{{ netBalance >= 0 ? 'Saudável' : 'Atenção' }}</span>
+          <span class="text-[#64748b]">situação financeira</span>
+        </div>
       </div>
     </section>
 
-    <section class="chart-section">
-      <h4>Evolução Financeira</h4>
-      <canvas id="financeChart"></canvas>
-    </section>
-
-    <section class="transactions-section">
-      <h4>Transações Recentes</h4>
-
-      <div v-for="t in transactions" :key="t.id" class="transaction-card" :class="t.category.type">
-        <div class="transaction-left">
-          <h5>{{ t.description }}</h5>
-          <span class="category">{{ t.category.name }} • {{ t.payment_method }}</span>
+    <!-- ── Charts ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-[#1e293b] rounded-xl p-6 flex flex-col">
+        <h4 class="text-white font-semibold mb-4">Despesas por Categoria</h4>
+        <div class="relative h-[280px]">
+          <canvas id="categoryChart"></canvas>
         </div>
-        <div class="transaction-right">
-          <div class="amount-wrapper">
-            <p :class="t.category.type === 'income' ? 'amount-income' : 'amount-expense'">
-              {{ t.amount < 0 ? '-' : '+' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
-            </p>
-        </div>
-          <span class="date">{{ formatDate(t.transaction_date) }}</span>
-        </div>
-        <div class="transaction-actions">
-          <button class="edit-btn" @click="openEditModal(t)">✏️</button>
-          <button class="delete-btn" @click="openDeleteModal(t)">🗑️</button>
+        <div class="flex flex-wrap gap-3 justify-center mt-4">
+          <div v-for="(cat, i) in categoryChartData" :key="i" class="flex items-center gap-1.5 text-xs text-[#94a3b8]">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: cat.color }"></div>
+            {{ cat.name }}
+          </div>
         </div>
       </div>
-      <div class="pagination">
+
+      <div class="bg-[#1e293b] rounded-xl p-6 flex flex-col">
+        <h4 class="text-white font-semibold mb-4">Tendência de Gastos (30 dias)</h4>
+        <div class="relative h-[280px]">
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="flex justify-center gap-6 mt-4">
+          <div class="flex items-center gap-1.5 text-xs text-[#94a3b8]">
+            <div class="w-3.5 h-[3px] rounded bg-[#00d084]"></div>
+            Receitas
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-[#94a3b8]">
+            <div class="w-3.5 h-[3px] rounded bg-[#ff4d4d]"></div>
+            Despesas
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Transactions Table ── -->
+    <section class="bg-[#1e293b] rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-[#334155]">
+        <h4 class="text-white font-semibold">Transações Recentes</h4>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="bg-[#0f172a]/50 text-[#94a3b8]">
+              <th class="px-5 py-3 font-medium text-left border-b border-[#334155]">Descrição</th>
+              <th class="px-5 py-3 font-medium text-left border-b border-[#334155]">Categoria</th>
+              <th class="px-5 py-3 font-medium text-left border-b border-[#334155]">Data</th>
+              <th class="px-5 py-3 font-medium text-right border-b border-[#334155]">Valor</th>
+              <th class="px-5 py-3 font-medium text-right border-b border-[#334155]">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="t in transactions"
+              :key="t.id"
+              class="border-b border-[#334155] hover:bg-[#334155]/20 transition-colors"
+            >
+              <td class="px-5 py-3 text-white font-medium">{{ t.description }}</td>
+              <td class="px-5 py-3">
+                <span
+                  class="inline-block px-3 py-0.5 rounded-full text-xs font-medium"
+                  :class="t.category.type === 'income' ? 'bg-[#10b981]/15 text-[#10b981]' : 'bg-[#f43f5e]/15 text-[#f43f5e]'"
+                >
+                  {{ t.category.name }}
+                </span>
+              </td>
+              <td class="px-5 py-3 text-[#94a3b8]">{{ formatDate(t.transaction_date) }}</td>
+              <td
+                class="px-5 py-3 text-right font-mono font-semibold"
+                :class="t.category.type === 'income' ? 'text-[#10b981]' : 'text-[#f43f5e]'"
+              >
+                {{ t.category.type === 'income' ? '+' : '-' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
+              </td>
+              <td class="px-5 py-3">
+                <div class="flex gap-2 justify-end">
+                  <button class="bg-[#334155] hover:bg-[#00a86b] px-2 py-1 rounded-md transition-colors" @click="openEditModal(t)">✏️</button>
+                  <button class="bg-[#334155] hover:bg-[#f43f5e] px-2 py-1 rounded-md transition-colors" @click="openDeleteModal(t)">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-center items-center gap-4 py-4 text-sm text-[#94a3b8]">
         <button
-          class="pagination-btn"
-          @click="prevPage"
+          class="bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors"
           :disabled="currentPage === 1"
-        >
-          Anterior
-        </button>
-
+          @click="prevPage"
+        >Anterior</button>
         <span>Página {{ currentPage }} de {{ lastPage }}</span>
-
         <button
-          class="pagination-btn"
-          @click="nextPage"
+          class="bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors"
           :disabled="currentPage === lastPage"
-        >
-          Próxima
-        </button>
+          @click="nextPage"
+        >Próxima</button>
       </div>
     </section>
 
-    <button class="floating-btn" @click="openModal">
-      Nova Transação
-    </button>
+    <!-- ── Modal: Nova / Editar ── -->
+    <div v-if="isModalOpen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[2000]" @click="closeModal">
+      <div class="bg-[#1e293b] p-8 w-[90%] max-w-md rounded-2xl shadow-2xl text-white max-h-[90vh] overflow-y-auto" @click.stop>
+        <h2 class="text-center text-[#3b82f6] text-xl font-bold mb-6">
+          {{ isEditing ? 'Editar Transação' : 'Nova Transação' }}
+        </h2>
+        <form @submit.prevent="submitTransaction" class="flex flex-col">
 
-    <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <h2 v-if="isEditing">Editar Transação</h2>
-        <h2 v-else>Nova Transação</h2>
-        <form @submit.prevent="submitTransaction">
-          <label>Categoria</label>
-          <select v-model="form.category_id" required>
-            <option value=0 disabled>Selecione...</option>
-            <option v-for="c in categories" :key="c.id" :value="c.id">
-              {{ c.name }}
-            </option>
+          <label class="text-xs text-[#94a3b8] mb-1">Categoria</label>
+          <select v-model="form.category_id" required
+            class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white">
+            <option value="0" disabled>Selecione...</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
 
-          <label>Descrição</label>
-          <input type="text" v-model="form.description" required />
+          <label class="text-xs text-[#94a3b8] mb-1">Descrição</label>
+          <input type="text" v-model="form.description" required
+            class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white" />
 
-          <label>Valor</label>
-          <input type="number" step="0.01" v-model="form.amount" required />
+          <label class="text-xs text-[#94a3b8] mb-1">Valor</label>
+          <input type="number" step="0.01" v-model="form.amount" required
+            class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white" />
 
-          <label>Data</label>
-          <input type="date" v-model="form.transaction_date" required />
+          <label class="text-xs text-[#94a3b8] mb-1">Data</label>
+          <input type="date" v-model="form.transaction_date" required
+            class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white" />
 
-          <label>Método de Pagamento</label>
-          <select v-model="form.payment_method" required>
+          <label class="text-xs text-[#94a3b8] mb-1">Método de Pagamento</label>
+          <select v-model="form.payment_method" required
+            class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white">
             <option value="credit_card">Cartão de Crédito</option>
             <option value="pix">Pix</option>
             <option value="money">Dinheiro</option>
             <option value="others">Outros</option>
           </select>
 
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="form.is_recurring" />
+          <label class="flex items-center gap-2 text-sm text-[#94a3b8] mb-4 cursor-pointer">
+            <input type="checkbox" v-model="form.is_recurring" class="w-auto" />
             Recorrente?
           </label>
 
           <div v-if="form.is_recurring">
-            <label>Tipo de Recorrência</label>
-            <input
-              type="text"
-              v-model="form.recurrence_type"
-              placeholder="ex: mensal, semanal..."
-            />
+            <label class="text-xs text-[#94a3b8] mb-1 block">Tipo de Recorrência</label>
+            <input type="text" v-model="form.recurrence_type" placeholder="ex: mensal, semanal..."
+              class="w-full px-3 py-2 mb-4 bg-[#0f172a] border border-[#334155] rounded-lg text-white" />
           </div>
 
-          <div class="buttons-row">
-            <button type="submit" class="btn-save">Salvar</button>
-            <button type="button" class="btn-cancel" @click="closeModal">Cancelar</button>
+          <div class="flex gap-3 mt-2">
+            <button type="submit" class="flex-1 py-2.5 bg-[#3b82f6] hover:bg-[#2563eb] rounded-lg font-medium transition-colors">Salvar</button>
+            <button type="button" class="flex-1 py-2.5 bg-[#f43f5e] hover:bg-[#e02040] rounded-lg font-medium transition-colors" @click="closeModal">Cancelar</button>
           </div>
         </form>
       </div>
     </div>
-    <div v-if="isDeleteModalOpen" class="modal-overlay" @click="closeDeleteModal">
-      <div class="modal-content" @click.stop>
-        <h3>Tem certeza que deseja excluir?</h3>
-        <p>Essa ação não pode ser desfeita.</p>
 
-        <div class="buttons-row">
-          <button class="btn-cancel" @click="closeDeleteModal">Cancelar</button>
-          <button class="btn-save" @click="confirmDelete">Excluir</button>
+    <!-- ── Modal: Deletar ── -->
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[2000]" @click="closeDeleteModal">
+      <div class="bg-[#1e293b] p-8 w-[90%] max-w-sm rounded-2xl shadow-2xl text-white" @click.stop>
+        <h3 class="text-center text-[#f43f5e] font-bold text-lg mb-2">Tem certeza que deseja excluir?</h3>
+        <p class="text-center text-[#94a3b8] mb-6">Essa ação não pode ser desfeita.</p>
+        <div class="flex gap-3">
+          <button class="flex-1 py-2.5 bg-[#334155] hover:bg-[#475569] rounded-lg font-medium transition-colors" @click="closeDeleteModal">Cancelar</button>
+          <button class="flex-1 py-2.5 bg-[#f43f5e] hover:bg-[#e02040] rounded-lg font-medium transition-colors" @click="confirmDelete">Excluir</button>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import Chart from "chart.js/auto";
+import { ref, onMounted, computed } from 'vue'
+import Chart from 'chart.js/auto'
 import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 import api from '@/services/api'
 
-
+// ── Types ──────────────────────────────────────────────────────────────────
 interface Transaction {
-  id: number;
-  description: string;
-  amount: number;
-  transaction_date: string;
-  payment_method: string;
-  category_id: number;
-  category: {
-    id: number;
-    name: string;
-    type: 'income' | 'expense';
-  };
-  is_recurring: boolean;
-  recurrence_type: string | null;
+  id: number
+  description: string
+  amount: number
+  transaction_date: string
+  payment_method: string
+  category_id: number
+  category: { id: number; name: string; type: 'income' | 'expense' }
+  is_recurring: boolean
+  recurrence_type: string | null
 }
-
 
 interface PaginatedResponse<T> {
   current_page: number
@@ -186,25 +294,178 @@ interface Category {
   name: string
 }
 
-const isMenuOpen = ref(false);
-const isModalOpen = ref(false);
-const auth = useAuthStore()
-const transactions = ref<Transaction[]>([]);
-const categories = ref<Category[]>([]);
-const currentPage = ref(1)
-const lastPage = ref(1)
-const total = ref(0)
-const perPage = ref(10)
-const isEditing = ref(false)
-const editingId = ref<number | null>(null)
+// ── State ──────────────────────────────────────────────────────────────────
+const isMenuOpen        = ref(false)
+const isModalOpen       = ref(false)
+const isEditing         = ref(false)
+const editingId         = ref<number | null>(null)
 const isDeleteModalOpen = ref(false)
-const deleteId = ref<number | null>(null)
-const financeChart = ref<Chart | null>(null);
+const deleteId          = ref<number | null>(null)
+
+const auth         = useAuthStore()
+const transactions = ref<Transaction[]>([])
+const categories   = ref<Category[]>([])
+const currentPage  = ref(1)
+const lastPage     = ref(1)
+const total        = ref(0)
+const perPage      = ref(10)
+
+const categoryChartRef = ref<Chart | null>(null)
+const trendChartRef    = ref<Chart | null>(null)
+
+const form = ref({
+  category_id: 0,
+  description: '',
+  amount: 0,
+  transaction_date: '',
+  payment_method: 'pix',
+  is_recurring: false,
+  recurrence_type: null as string | null,
+})
+
+// ── Static data ────────────────────────────────────────────────────────────
+
+const menuItems = [
+  { icon: '📊', label: 'Dashboard', action: () => goTo() },
+  { icon: '👤', label: 'Perfil',    action: () => goTo() },
+  { icon: '👋', label: 'Sair',      action: () => logout() },
+]
+
+// ── Computed ───────────────────────────────────────────────────────────────
+const totalExpenses = computed(() =>
+  transactions.value.filter((t) => t.category.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+)
+const totalIncome = computed(() =>
+  transactions.value.filter((t) => t.category.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+)
+const netBalance = computed(() => totalIncome.value - totalExpenses.value)
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16']
+
+const categoryChartData = computed(() => {
+  const map: Record<string, { name: string; value: number; color: string }> = {}
+  transactions.value
+    .filter((t) => t.category.type === 'expense')
+    .forEach((t) => {
+      const name = t.category.name
+      if (!map[name]) map[name] = { name, value: 0, color: COLORS[Object.keys(map).length % COLORS.length] }
+      map[name].value += Number(t.amount)
+    })
+  return Object.values(map)
+})
+
+const trendChartData = computed(() => {
+  const monthly: Record<string, { income: number; expense: number }> = {}
+  transactions.value.forEach((t) => {
+    const key = new Date(t.transaction_date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+    if (!monthly[key]) monthly[key] = { income: 0, expense: 0 }
+    if (t.category.type === 'income') monthly[key].income += Number(t.amount)
+    else monthly[key].expense += Math.abs(Number(t.amount))
+  })
+  const sorted = Object.keys(monthly)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+    .slice(-6)
+  return {
+    labels:   sorted,
+    incomes:  sorted.map((m) => monthly[m]?.income  || 0),
+    expenses: sorted.map((m) => monthly[m]?.expense || 0),
+  }
+})
+
+// ── Charts ─────────────────────────────────────────────────────────────────
+const renderCategoryChart = () => {
+  const ctx = document.getElementById('categoryChart') as HTMLCanvasElement
+  if (!ctx) return
+  categoryChartRef.value?.destroy()
+  const data = categoryChartData.value
+  categoryChartRef.value = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.map((d) => d.name),
+      datasets: [{ data: data.map((d) => d.value), backgroundColor: data.map((d) => d.color), borderWidth: 0, hoverOffset: 6 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: R$ ${Number(c.parsed).toFixed(2)}` } },
+      },
+    },
+  })
+}
+
+const renderTrendChart = () => {
+  const ctx = document.getElementById('trendChart') as HTMLCanvasElement
+  if (!ctx) return
+  trendChartRef.value?.destroy()
+  const { labels, incomes, expenses } = trendChartData.value
+  trendChartRef.value = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Receitas',  data: incomes,   borderColor: '#00d084', backgroundColor: 'rgba(0,208,132,.1)',  borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true },
+        { label: 'Despesas', data: expenses, borderColor: '#ff4d4d', backgroundColor: 'rgba(255,77,77,.1)',  borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, tension: 0.4, fill: true },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: R$ ${Number(c.parsed.y).toFixed(2)}` } },
+      },
+      scales: {
+        x: { ticks: { color: '#aaa' }, grid: { display: false } },
+        y: { ticks: { color: '#aaa', callback: (v) => `R$${v}` }, grid: { color: '#334155' } },
+      },
+    },
+  })
+}
+
+const refreshCharts = () => { renderCategoryChart(); renderTrendChart() }
+
+// ── API ────────────────────────────────────────────────────────────────────
+const fetchTransactions = async (page = 1) => {
+  try {
+    const { data } = await api.get<PaginatedResponse<Transaction>>('/transactions', { params: { page, per_page: perPage.value } })
+    transactions.value = data.data
+    currentPage.value  = data.current_page
+    lastPage.value     = data.last_page
+    total.value        = data.total
+  } catch (e) { console.error(e) }
+}
+
+const fetchCategories = async () => {
+  try { const { data } = await api.get('/categories'); categories.value = data }
+  catch (e) { console.error(e) }
+}
+
+const createTransaction = async () => {
+  try { await api.post('/transactions', form.value); closeModal(); await fetchTransactions(currentPage.value); refreshCharts() }
+  catch (e) { console.error(e) }
+}
+
+const updateTransaction = async () => {
+  try { await api.put(`/transactions/${editingId.value}`, form.value); closeModal(); await fetchTransactions(currentPage.value); refreshCharts() }
+  catch (e) { console.error(e) }
+}
+
+const confirmDelete = async () => {
+  try { await api.delete(`/transactions/${deleteId.value}`); closeDeleteModal(); await fetchTransactions(currentPage.value); refreshCharts() }
+  catch (e) { console.error(e) }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const submitTransaction = () => (isEditing.value ? updateTransaction() : createTransaction())
+const openModal         = () => (isModalOpen.value = true)
+const closeModal        = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; resetForm() }
 
 const openEditModal = (t: Transaction) => {
-  isEditing.value = true
-  editingId.value = t.id
-
+  isEditing.value   = true
+  editingId.value   = t.id
   form.value = {
     category_id: t.category_id,
     description: t.description,
@@ -213,646 +474,24 @@ const openEditModal = (t: Transaction) => {
     payment_method: t.payment_method,
     is_recurring: t.is_recurring ?? false,
     recurrence_type: t.recurrence_type ?? null,
-  };
-
-  isModalOpen.value = true;
-};
-
-const totalExpenses = computed(() => {
-  return transactions.value?.filter(t => t.category.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0) ?? 0;
-});
-
-const totalIncome = computed(() => {
-  return transactions.value?.filter(t => t.category.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0) ?? 0;
-});
-
-
-const form = ref({
-  category_id: 0,
-  description: "",
-  amount: 0,
-  transaction_date: "",
-  payment_method: "pix",
-  is_recurring: false,
-  recurrence_type: null as string | null,
-})
-
-const getChartData = (transactions: Transaction[]) => {
-  const monthlyData: Record<string, { income: number; expense: number }> = {};
-
-  transactions.forEach(t => {
-    const monthKey = new Date(t.transaction_date).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
-    if (!monthlyData[monthKey]) monthlyData[monthKey] = { income: 0, expense: 0 };
-    if (t.category.type === "income") monthlyData[monthKey].income += t.amount;
-    else monthlyData[monthKey].expense += Math.abs(t.amount);
-  });
-
-  const sortedMonths = Object.keys(monthlyData).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  ).slice(-6);
-
-  return {
-    labels: sortedMonths,
-    incomes: sortedMonths.map(month => monthlyData[month]?.income || 0),
-    expenses: sortedMonths.map(month => monthlyData[month]?.expense || 0),
-  };
-};
-
-const renderChart = () => {
-  const ctx = document.getElementById("financeChart") as HTMLCanvasElement;
-  const { labels, incomes, expenses } = getChartData(transactions.value);
-
-  if (financeChart.value) financeChart.value.destroy();
-
-  financeChart.value = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Receitas",
-          data: incomes,
-          backgroundColor: "#00d084",
-          borderRadius: 6,
-        },
-        {
-          label: "Despesas",
-          data: expenses,
-          backgroundColor: "#ff4d4d",
-          borderRadius: 6,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: "#ccc" } },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: function(context) {
-              const value = context.parsed.y ?? 0;
-              return context.dataset.label + ': R$ ' + value.toFixed(2);
-            }
-          }
-        }
-      },
-      scales: {
-        x: { ticks: { color: "#aaa" }, grid: { display: false } },
-        y: {
-          ticks: { color: "#aaa", callback: (v) => `R$ ${v}` },
-          grid: { color: "#333" }
-        },
-      }
-    },
-  });
-};
-
-
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
-};
-
-const logout = () => {
-  return auth.logout()
-};
-
-const submitTransaction = async () => {
-  if (isEditing.value) {
-    await updateTransaction()
-  } else {
-    await createTransaction()
   }
+  isModalOpen.value = true
 }
 
-const updateTransaction = async () => {
-  try {
-    await api.put(`/transactions/${editingId.value}`, form.value)
-    closeModal()
-    await fetchTransactions(currentPage.value)
-    renderChart()
-  } catch (error) {
-    console.error(error)
-  }
-}
-
-
-const openDeleteModal = (t: Transaction) => {
-  deleteId.value = t.id
-  isDeleteModalOpen.value = true
-}
-
-const closeDeleteModal = () => {
-  isDeleteModalOpen.value = false
-  deleteId.value = null
-}
-
-const confirmDelete = async () => {
-  try {
-    await api.delete(`/transactions/${deleteId.value}`)
-    closeDeleteModal()
-    await fetchTransactions(currentPage.value)
-    renderChart()
-  } catch (error) {
-    console.error(error)
-  }
-}
-
-const goTo = () => {
-    router.push('/under-construction')
-    return
-};
-
-const fetchTransactions = async (page = 1) => {
-  try {
-    const { data } = await api.get<PaginatedResponse<Transaction>>('/transactions', {
-      params: { page, per_page: perPage.value },
-    })
-    transactions.value = data.data
-    currentPage.value = data.current_page
-    lastPage.value = data.last_page
-    total.value = data.total
-  } catch (error) {
-    console.error(error)
-  }
-}
-
-const nextPage = () => {
-  if (currentPage.value < lastPage.value) {
-    fetchTransactions(currentPage.value + 1)
-  }
-}
-
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    fetchTransactions(currentPage.value - 1)
-  }
-}
-
-const openModal = () => {
-  isModalOpen.value = true;
-}
-
-const closeModal = () => {
-  isModalOpen.value = false
-  isEditing.value = false
-  editingId.value = null
-  resetForm()
-}
-
+const openDeleteModal  = (t: Transaction) => { deleteId.value = t.id; isDeleteModalOpen.value = true }
+const closeDeleteModal = () => { isDeleteModalOpen.value = false; deleteId.value = null }
 
 const resetForm = () => {
-  form.value = {
-    category_id: 0,
-    description: "",
-    amount: 0,
-    transaction_date: "",
-    payment_method: "pix",
-    is_recurring: false,
-    recurrence_type: null,
-  };
+  form.value = { category_id: 0, description: '', amount: 0, transaction_date: '', payment_method: 'pix', is_recurring: false, recurrence_type: null }
 }
 
-const fetchCategories = async () => {
-  try {
-    const { data } = await api.get("/categories");
-    categories.value = data;
-  } catch (error) {
-    console.error(error);
-  }
-}
+const toggleMenu = () => (isMenuOpen.value = !isMenuOpen.value)
+const logout     = () => auth.logout()
+const goTo       = () => router.push('/under-construction')
 
-const createTransaction = async () => {
-  try {
-    await api.post("/transactions", form.value);
-    closeModal();
-    await fetchTransactions(currentPage.value);
-    renderChart()
-  } catch (error) {
-    console.error(error);
-  }
-}
+const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+const nextPage   = () => { if (currentPage.value < lastPage.value) fetchTransactions(currentPage.value + 1) }
+const prevPage   = () => { if (currentPage.value > 1) fetchTransactions(currentPage.value - 1) }
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-};
-
-onMounted(async () => {
-  await fetchTransactions();
-  await fetchCategories();
-  renderChart();
-});
+onMounted(async () => { await fetchTransactions(); await fetchCategories(); refreshCharts() })
 </script>
-
-<style scoped>
-.dashboard {
-  width: 100vw;
-  min-height: 100vh;
-  background-color: #1a1d29;
-  color: #f1f1f1;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 1.5rem 3rem;
-  box-sizing: border-box;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
-}
-
-.menu-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #232736;
-  color: #fff;
-  border: none;
-  font-size: 1.5rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1001;
-  transition: background 0.3s ease;
-}
-.menu-btn:hover {
-  background: #00d084;
-}
-
-.side-menu {
-  position: fixed;
-  top: 0;
-  left: -250px;
-  height: 100%;
-  width: 230px;
-  background-color: #232736;
-  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.4);
-  transition: left 0.3s ease;
-  padding-top: 70px;
-  z-index: 1000;
-}
-
-.side-menu.open {
-  left: 0;
-}
-
-.side-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.side-menu li {
-  padding: 1rem 1.5rem;
-  color: #ccc;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-.side-menu li:hover {
-  background-color: #00d084;
-  color: #fff;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 999;
-}
-
-.header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #00d084;
-  color: #fff;
-  border-radius: 10px;
-  padding: 1rem;
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 1.5rem;
-}
-
-.card {
-  background-color: #232736;
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.card h4 {
-  font-size: 1rem;
-  color: #aaa;
-}
-
-.card .value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0.4rem 0;
-}
-
-.card .info {
-  font-size: 0.9rem;
-  color: #aaa;
-}
-
-.card.negative .value { color: #ff4d4d; }
-.card.positive .value { color: #00d084; }
-.card.excellent .value { color: #00ffa3; }
-
-.chart-section {
-  background-color: #232736;
-  border-radius: 12px;
-  padding: 1.5rem;
-  height: 400px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.chart-section h4 {
-  margin-bottom: 1rem;
-  color: #f1f1f1;
-}
-
-.chart-section canvas {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-body, html {
-  overflow-x: hidden;
-}
-
-.floating-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: #00a86b;
-  color: white;
-  border: none;
-  padding: 0.9rem 1.4rem;
-  border-radius: 50px;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
-}
-
-.floating-btn:hover {
-  background-color: #00d084;
-}
-
-.transactions-section {
-  background-color: #232736;
-  border-radius: 12px;
-  padding: 1.5rem;
-  color: #f1f1f1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.transactions-section h4 {
-  margin-bottom: 0.5rem;
-  font-size: 1.2rem;
-  color: #fff;
-}
-
-.transaction-card {
-  background: #1e2230;
-  border-radius: 10px;
-  padding: 1rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: background 0.3s ease;
-}
-
-.transaction-card:hover {
-  background: #2a2f42;
-}
-
-.transaction-left h5 {
-  margin: 0;
-  font-size: 1rem;
-  color: #fff;
-}
-
-.category {
-  font-size: 0.85rem;
-  color: #aaa;
-}
-
-.transaction-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.amount-income {
-  color: #00d084;
-  font-weight: 600;
-}
-
-.amount-expense {
-  color: #ff4d4d;
-  font-weight: 600;
-}
-
-.date {
-  font-size: 0.85rem;
-  color: #aaa;
-}
-
-.amount-wrapper {
-  width: 100%;
-  text-align: right;
-}
-
-.amount-income, .amount-expense {
-  font-family: 'Courier New', monospace;
-}
-
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.pagination-btn {
-  background-color: #00a86b;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #00d084;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background: #1a1d29;
-  padding: 2rem;
-  width: 90%;
-  max-width: 420px;
-  border-radius: 14px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-  color: #fff;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-content h2 {
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: #00d084;
-}
-
-.modal-content input,
-.modal-content select {
-  width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: #0f111a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  color: #fff;
-  box-sizing: border-box;
-}
-
-.modal-content label {
-  margin-bottom: 0.4rem;
-  display: block;
-  font-size: 0.9rem;
-  color: #ccc;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-}
-
-.buttons-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.buttons-row button {
-  flex: 1;
-  padding: 0.7rem;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn-save {
-  background: #00a86b;
-}
-
-.btn-save:hover {
-  background: #00d084;
-}
-
-.btn-cancel {
-  background: #ff4d4d;
-}
-
-.btn-cancel:hover {
-  background: #ff6b6b;
-}
-
-.transaction-actions {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.6rem;
-}
-
-.edit-btn,
-.delete-btn {
-  background: #232736;
-  border: none;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #fff;
-  transition: 0.2s ease;
-}
-
-.edit-btn:hover {
-  background: #00a86b;
-}
-
-.delete-btn:hover {
-  background: #ff4d4d;
-}
-
-
-@media (max-width: 768px) {
-  .dashboard {
-    padding: 1rem;
-  }
-
-  .metrics {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .chart-section {
-    height: 300px;
-  }
-}
-</style>

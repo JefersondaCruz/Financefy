@@ -19,24 +19,6 @@ services:
       - frontend_net
     profiles: ["app", "front", "all"]
 
-  chatbot:
-    build:
-      context: ./chatbot
-      dockerfile: Dockerfile
-    container_name: chatbot_app
-    env_file:
-      - ./chatbot/.env
-    ports:
-      - "8001:8000"
-    volumes:
-      - ./chatbot:/var/www/html
-    depends_on:
-      - postgres
-    command: sh -c "composer install && php artisan config:clear && php artisan serve --host=0.0.0.0 --port=8001"
-    networks:
-      - backend_net
-    profiles: ["chatbot", "all"]
-
   postgres:
     image: postgres:16-alpine 
     container_name: postgres_db
