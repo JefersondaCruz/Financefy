@@ -31,6 +31,26 @@ services:
       - postgres_data:/var/lib/postgresql
     networks:
       - backend_net
+  
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - backend_net
+
+  n8n:
+    image: n8nio/n8n:stable
+    container_name: n8n_app
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - backend_net
 
   vue:
     build:
@@ -49,6 +69,7 @@ services:
 
 volumes:
   postgres_data:
+  n8n_data:
 
 networks:
   backend_net:

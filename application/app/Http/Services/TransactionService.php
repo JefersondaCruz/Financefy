@@ -2,11 +2,18 @@
 
 namespace App\Http\Services;
 
+use App\Http\Repositories\CategoryRepository;
 use App\Http\Repositories\TransactionRepository;
+use App\Http\Repositories\UserRepository;
 
 class TransactionService extends BaseService
 {
-    public function __construct(protected TransactionRepository $transactionRepository)
+    public function __construct(
+        protected TransactionRepository $transactionRepository,
+        protected UserRepository $userRepository,
+        protected CategoryRepository $categoryRepository
+    )
+
     {
         parent::__construct($transactionRepository);
     }
@@ -32,14 +39,26 @@ class TransactionService extends BaseService
 
     public function store(array $data)
     {
-        $data['user_id'] = auth()->id();
+        $data['user_id'] = auth()->id()
+            ?? $this->userRepository->getByPhone($data['phone'])?->id
+            ?? throw new \Exception('Usuário não encontrado');
+
+        if (!isset($data['category_id']) && isset($data['category'])) {
+
+            $category = $this->categoryRepository->findByName($data['category'])
+                ?? throw new \Exception('Categoria não encontrada');
+
+            $data['category_id'] = $category->id;
+        }
+
+        unset($data['category']);
+
         return $this->transactionRepository->store($data);
     }
 
-    public function get(int $perPage = 10)
+    public function get(int $perPage, string $startDate, string $endDate)
     {
-        return $this->transactionRepository->getAllWithCategory($perPage);
-
+        return $this->transactionRepository->getAllWithCategory($perPage, $startDate, $endDate);
     }
 
 }

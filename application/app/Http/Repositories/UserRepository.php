@@ -10,4 +10,8 @@ class UserRepository extends BaseRepository
         parent::__construct($model);
     }
 
+    public function getByPhone($phone){
+        $this->model->where('phone', $phone)->first();
+    }
+
 }

@@ -20,3 +20,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/transactions/{id}', [TransactionController::class, 'destroy']);
     Route::get('/categories', [CategoryController::class, 'index']);
 });
+
+Route::group(['prefix'=> 'chatbot'], function () {
+    Route::get('/transactions', [TransactionController::class, 'get']);
+    Route::post('/transactions', [TransactionController::class, 'store']);
+});

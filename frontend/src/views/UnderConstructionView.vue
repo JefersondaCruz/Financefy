@@ -1,142 +1,50 @@
 <template>
-  <div class="under-construction">
-    <button class="menu-btn" @click="toggleMenu">
-      ☰
-    </button>
+  <div class="min-h-screen bg-[#07090F] text-white flex">
 
-    <aside class="side-menu" :class="{ open: isMenuOpen }">
-      <ul>
-        <li @click="goTo('dashboard')">📊 Dashboard</li>
-        <li @click="goTo('profile')">👤 Perfil</li>
-        <li @click="logout">👋 Sair</li>
-      </ul>
-    </aside>
+    <AppSidebar :isOpen="isMenuOpen" @close="isMenuOpen = false" />
 
-    <main class="content">
-      <i class="icon">🚧</i>
+    <div class="flex-1 flex flex-col">
+      <!-- Topbar -->
+      <header class="flex items-center gap-4 px-6 py-5">
+        <button
+          class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors"
+          @click="isMenuOpen = true"
+        >
+          <span class="block w-4 h-[1.5px] bg-white rounded" />
+          <span class="block w-4 h-[1.5px] bg-white rounded" />
+          <span class="block w-4 h-[1.5px] bg-white rounded" />
+        </button>
+        <span class="text-[13px] text-[#4A6080] font-medium">Em construção</span>
+      </header>
 
-      <p class="message">
-        Esta funcionalidade está em desenvolvimento 🚧
-      </p>
-    </main>
+      <!-- Content -->
+      <main class="flex-1 flex flex-col items-center justify-center gap-6 px-6 text-center">
+        <div class="w-24 h-24 rounded-3xl bg-[#0D1526] border border-[#1E2D45] flex items-center justify-center text-5xl">
+          🚧
+        </div>
+        <div>
+          <h2 class="text-2xl font-extrabold tracking-tight text-white mb-2">Em Desenvolvimento</h2>
+          <p class="text-[14px] text-[#4A6080] max-w-[280px] leading-relaxed">
+            Esta funcionalidade ainda está sendo construída. Em breve estará disponível.
+          </p>
+        </div>
+        <button
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D1526] border border-[#1E2D45] text-[13px] font-semibold text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] transition-all"
+          @click="router.push('/dashboard')"
+        >
+          ← Voltar ao Dashboard
+        </button>
+      </main>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 
-const isMenuOpen = ref(false);
-const router = useRouter();
-
-const toggleMenu = () => (isMenuOpen.value = !isMenuOpen.value);
-
-const goTo = (page: string) => {
-  router.push(`/${page}`);
-};
-
-const logout = () => {
-  localStorage.removeItem("auth_token");
-  router.push("/login");
-};
+const isMenuOpen = ref(false)
+const router = useRouter()
 </script>
-
-<style scoped>
-html, body {
-  height: 100%;
-  margin: 0;
-  background-color: #1e1e2c;
-}
-
-.under-construction {
-  background-color: #1e1e2c;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.side-menu {
-  position: fixed;
-  top: 0;
-  left: -250px;
-  height: 100%;
-  width: 230px;
-  background-color: #232736;
-  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.4);
-  transition: left 0.3s ease;
-  padding-top: 70px;
-  z-index: 1000;
-}
-
-.side-menu.open {
-  left: 0;
-}
-
-.side-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.side-menu li {
-  padding: 1rem 1.5rem;
-  color: #ccc;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-.side-menu li:hover {
-  background-color: #00d084;
-  color: #fff;
-}
-
-.menu-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: #232736;
-  color: #fff;
-  border: none;
-  font-size: 1.5rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1001;
-  transition: background 0.3s ease;
-}
-.menu-btn:hover {
-  background: #00d084;
-}
-
-.app-bar {
-  background: #7CFF00;
-  color: #000;
-  padding: 16px;
-  font-weight: bold;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.content {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  text-align: center;
-  margin-top: 20px;
-}
-
-.icon {
-  font-size: 80px;
-  color: #7CFF00;
-}
-
-.message {
-  color: #ffffffb3;
-  font-size: 18px;
-  margin-top: 20px;
-  max-width: 300px;
-}
-</style>

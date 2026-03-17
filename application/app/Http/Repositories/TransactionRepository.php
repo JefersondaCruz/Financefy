@@ -3,6 +3,7 @@
 namespace App\Http\Repositories;
 
 use App\Models\Transaction;
+use Carbon\Carbon;
 
 class TransactionRepository extends BaseRepository
 {
@@ -10,13 +11,17 @@ class TransactionRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getAllWithCategory(int $perPage = 10)
+    public function getAllWithCategory(int $perPage = 10, string $startDate, string $endDate)
     {
         return $this->model
-        ->with('category')
-        ->where('user_id', auth()->id())
-        ->orderByDesc('transaction_date')
-        ->paginate($perPage);
+            ->with('category')
+            ->where('user_id', auth()->id())
+            ->whereBetween('created_at', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ])
+            ->orderByDesc('transaction_date')
+            ->paginate($perPage);
     }
 
 }

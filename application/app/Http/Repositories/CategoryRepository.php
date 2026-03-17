@@ -9,4 +9,11 @@ class CategoryRepository extends BaseRepository
     public function __construct(Category $model) {
         parent::__construct($model);
     }
+
+    public function findByName(string $name): ?Category
+    {
+        return $this->model
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->first();
+    }
 }

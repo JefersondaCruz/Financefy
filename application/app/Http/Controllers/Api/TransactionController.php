@@ -40,9 +40,17 @@ class TransactionController extends Controller
 
     public function get(Request $request)
     {
+        #todo criar request personalizada
+        $request->validate([
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+        ]);
+
         return response()->json(
             $this->transactionService->get(
-                $request->get('per_page', 10)
+                $request->get('per_page', 10),
+                $request->get('start_date', null),
+                $request->get('end_date', null)
             )
         );
     }
