@@ -5,7 +5,6 @@
 
     <div class="flex-1 flex flex-col min-w-0 min-h-screen">
 
-      <!-- Topbar -->
       <header class="flex items-center justify-between px-6 py-5 md:px-8 border-b border-[#1E2D45] shrink-0">
         <div class="flex items-center gap-4">
           <button
@@ -34,10 +33,8 @@
         </button>
       </header>
 
-      <!-- Chat area -->
       <div class="flex-1 flex flex-col overflow-hidden">
 
-        <!-- Loading history -->
       <div v-if="loadingHistory" class="flex-1 flex items-center justify-center">
         <div class="flex flex-col items-center gap-3">
           <div class="flex gap-1.5">
@@ -49,10 +46,8 @@
         </div>
       </div>
 
-      <!-- Empty state / Suggestions -->
         <div v-if="!loadingHistory && messages.length === 0" class="flex-1 flex flex-col items-center justify-center px-6 py-10 gap-8">
 
-          <!-- Icon -->
           <div class="relative">
             <div class="w-20 h-20 rounded-3xl bg-[#0D1526] border border-[#1E2D45] flex items-center justify-center text-4xl">
               ◈
@@ -68,7 +63,6 @@
             </p>
           </div>
 
-          <!-- Quick suggestions -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-[600px]">
             <button
               v-for="s in suggestions"
@@ -85,7 +79,6 @@
           </div>
         </div>
 
-        <!-- Messages -->
         <div v-else ref="messagesEl" class="flex-1 overflow-y-auto px-6 py-6 md:px-8 flex flex-col gap-4">
           <div
             v-for="(msg, i) in messages"
@@ -93,13 +86,11 @@
             class="flex gap-3"
             :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
           >
-            <!-- AI avatar -->
             <div
               v-if="msg.role === 'assistant'"
               class="w-8 h-8 rounded-xl bg-[#0D1526] border border-[#1E2D45] flex items-center justify-center text-sm shrink-0 mt-0.5"
             >◈</div>
 
-            <!-- Bubble + timestamp -->
             <div class="flex flex-col gap-1" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
               <div
                 class="max-w-[75%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed"
@@ -114,14 +105,12 @@
               </span>
             </div>
 
-            <!-- User avatar -->
             <div
               v-if="msg.role === 'user'"
               class="w-8 h-8 rounded-xl bg-[#4F8EF7]/20 border border-[#4F8EF7]/30 flex items-center justify-center text-sm text-[#4F8EF7] shrink-0 mt-0.5 font-bold"
             >U</div>
           </div>
 
-          <!-- Typing indicator -->
           <div v-if="loading" class="flex gap-3 justify-start">
             <div class="w-8 h-8 rounded-xl bg-[#0D1526] border border-[#1E2D45] flex items-center justify-center text-sm shrink-0">◈</div>
             <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
@@ -132,9 +121,7 @@
           </div>
         </div>
 
-        <!-- Input bar -->
         <div class="shrink-0 px-6 py-4 md:px-8 border-t border-[#1E2D45] bg-[#07090F]">
-          <!-- Quick chips (shown after first message) -->
           <div v-if="messages.length > 0" class="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
             <button
               v-for="chip in quickChips"
@@ -185,18 +172,18 @@ import api from '@/services/api'
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 
 interface Message {
-  role:       'user' | 'assistant'
-  content:    string
+  role: 'user' | 'assistant'
+  content: string
   created_at?: string
 }
 
-const isMenuOpen     = ref(false)
-const inputText      = ref('')
-const loading        = ref(false)
+const isMenuOpen = ref(false)
+const inputText = ref('')
+const loading = ref(false)
 const loadingHistory = ref(true)
-const messages       = ref<Message[]>([])
-const messagesEl     = ref<HTMLElement | null>(null)
-const textareaEl     = ref<HTMLTextAreaElement | null>(null)
+const messages = ref<Message[]>([])
+const messagesEl = ref<HTMLElement | null>(null)
+const textareaEl = ref<HTMLTextAreaElement | null>(null)
 
 const canSend = computed(() => inputText.value.trim().length > 0 && !loading.value)
 
@@ -215,7 +202,6 @@ const quickChips = [
   'Dicas para investir',
 ]
 
-// ── Load history from DB on mount ─────────────────────────────────────────
 onMounted(async () => {
   try {
     const { data } = await api.get('/ai/history')
@@ -228,7 +214,6 @@ onMounted(async () => {
   }
 })
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight
@@ -251,13 +236,11 @@ const sendSuggestion = (text: string) => {
   sendMessage()
 }
 
-// ── Send message ───────────────────────────────────────────────────────────
 const sendMessage = async () => {
   if (!canSend.value) return
   const text = inputText.value.trim()
   resetTextarea()
 
-  // Optimistic update — show user message immediately
   messages.value.push({ role: 'user', content: text })
   await scrollToBottom()
   loading.value = true
@@ -276,13 +259,11 @@ const sendMessage = async () => {
   }
 }
 
-// ── Clear chat ─────────────────────────────────────────────────────────────
 const clearChat = async () => {
   try { await api.delete('/ai/conversation') } catch {}
   messages.value = []
 }
 
-// ── Markdown renderer ──────────────────────────────────────────────────────
 const renderMessage = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
@@ -294,7 +275,6 @@ const renderMessage = (text: string): string => {
     .replace(/\n/g, '<br />')
 }
 
-// ── Format timestamp ───────────────────────────────────────────────────────
 const formatTime = (dateStr?: string): string => {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })

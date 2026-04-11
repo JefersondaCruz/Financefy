@@ -5,7 +5,6 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0 max-w-[800px]">
 
-      <!-- Topbar -->
       <header class="flex items-center gap-4">
         <button class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors" @click="isMenuOpen = true">
           <span class="block w-4 h-[1.5px] bg-white rounded" />
@@ -18,7 +17,6 @@
         </div>
       </header>
 
-      <!-- Avatar + name section -->
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-6 flex items-center gap-5">
         <div class="w-16 h-16 rounded-2xl bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 flex items-center justify-center text-2xl font-bold text-[#4F8EF7] shrink-0">
           {{ initials }}
@@ -30,7 +28,6 @@
         </div>
       </div>
 
-      <!-- Profile form -->
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[#1E2D45]">
           <h3 class="text-sm font-bold text-white">Informações Pessoais</h3>
@@ -57,7 +54,6 @@
             </div>
           </div>
 
-          <!-- Feedback message -->
           <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
             <p v-if="profileMsg" class="text-[12px] font-semibold" :class="profileMsg.type === 'success' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
               {{ profileMsg.text }}
@@ -74,7 +70,6 @@
         </form>
       </div>
 
-      <!-- Password form -->
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[#1E2D45]">
           <h3 class="text-sm font-bold text-white">Alterar Senha</h3>
@@ -112,7 +107,6 @@
             </div>
           </div>
 
-          <!-- Password strength indicator -->
           <div v-if="passwordForm.password" class="flex flex-col gap-1.5">
             <div class="flex gap-1.5">
               <div v-for="i in 4" :key="i" class="flex-1 h-1 rounded-full transition-all duration-300"
@@ -137,7 +131,6 @@
         </form>
       </div>
 
-      <!-- Danger zone -->
       <div class="bg-[#0D1526] border border-[#FF3D6B]/20 rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[#FF3D6B]/20">
           <h3 class="text-sm font-bold text-[#FF3D6B]">Zona de Perigo</h3>
@@ -154,7 +147,6 @@
         </div>
       </div>
 
-      <!-- Confirm delete account modal -->
       <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
         <div v-if="showDeleteAccount" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" @click="showDeleteAccount = false">
           <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-8 w-full max-w-[380px] text-center shadow-2xl" @click.stop>
@@ -190,20 +182,22 @@ import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 
 const auth = useAuthStore()
 
-const isMenuOpen          = ref(false)
-const savingProfile       = ref(false)
-const savingPassword      = ref(false)
-const showDeleteAccount   = ref(false)
+const isMenuOpen = ref(false)
+const savingProfile = ref(false)
+const savingPassword = ref(false)
+const showDeleteAccount = ref(false)
 const deleteAccountPassword = ref('')
 
 const profileForm = ref({ name: '', email: '', created_at: '' })
 const passwordForm = ref({ current_password: '', password: '', password_confirmation: '' })
 
-interface Msg { type: 'success' | 'error'; text: string }
+interface Msg {
+  type: 'success' | 'error';
+  text: string
+}
 const profileMsg  = ref<Msg | null>(null)
 const passwordMsg = ref<Msg | null>(null)
 
-// ── Computed ───────────────────────────────────────────────────────────────
 const initials = computed(() =>
   profileForm.value.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'U'
 )
@@ -233,7 +227,6 @@ const strengthLabel = computed(() => {
   return ['', 'Fraca', 'Razoável', 'Boa', 'Forte'][passwordStrength.value] ?? ''
 })
 
-// ── API ────────────────────────────────────────────────────────────────────
 const fetchProfile = async () => {
   try { const { data } = await api.get('/user'); profileForm.value = data }
   catch (e) { console.error(e) }

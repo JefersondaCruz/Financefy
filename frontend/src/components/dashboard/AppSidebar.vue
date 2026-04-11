@@ -1,5 +1,4 @@
 <template>
-  <!-- Overlay -->
   <Transition
     enter-active-class="transition-opacity duration-200"
     enter-from-class="opacity-0"
@@ -13,18 +12,15 @@
     />
   </Transition>
 
-  <!-- Drawer -->
   <aside
     class="fixed top-0 h-full w-[240px] bg-[#0D1526] border-r border-[#1E2D45] flex flex-col z-[1000] transition-transform duration-250"
     :class="isOpen ? 'translate-x-0' : '-translate-x-full'"
   >
-    <!-- Brand -->
     <div class="flex items-center gap-3 px-6 py-7 border-b border-[#1E2D45]">
       <span class="text-[#4F8EF7] text-2xl leading-none">◈</span>
       <span class="text-white font-extrabold text-lg tracking-[0.06em] uppercase">Finflow</span>
     </div>
 
-    <!-- Nav -->
     <nav class="flex-1 px-3 py-4 flex flex-col gap-0.5">
       <button
         v-for="item in navItems"
@@ -41,7 +37,6 @@
       </button>
     </nav>
 
-    <!-- Logout -->
     <div class="px-3 pb-6 pt-3 border-t border-[#1E2D45]">
       <button
         class="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-colors duration-150"

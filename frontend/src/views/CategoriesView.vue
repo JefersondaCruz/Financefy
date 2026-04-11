@@ -5,7 +5,6 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0">
 
-      <!-- Topbar -->
       <header class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4">
           <button
@@ -30,7 +29,6 @@
         </button>
       </header>
 
-      <!-- Stats row -->
       <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 overflow-hidden">
           <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#4F8EF7]" />
@@ -49,7 +47,6 @@
         </div>
       </section>
 
-      <!-- Filter tabs + search -->
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-1 bg-[#0D1526] border border-[#1E2D45] rounded-xl p-1">
           <button
@@ -73,7 +70,6 @@
         </div>
       </div>
 
-      <!-- Categories grid -->
       <div v-if="loading" class="flex items-center justify-center py-20">
         <span class="text-[#4A6080] text-sm">Carregando categorias...</span>
       </div>
@@ -93,13 +89,11 @@
           :key="cat.id"
           class="group bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 hover:border-[#2A3F5F] transition-all hover:-translate-y-0.5 duration-200 relative overflow-hidden"
         >
-          <!-- Type accent bar -->
           <div
             class="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl"
             :class="cat.type === 'income' ? 'bg-[#00E5A0]' : 'bg-[#FF3D6B]'"
           />
 
-          <!-- Icon + name -->
           <div class="flex items-start justify-between mb-4">
             <div
               class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
@@ -108,7 +102,6 @@
               {{ cat.type === 'income' ? '📈' : '📉' }}
             </div>
 
-            <!-- Action buttons (visible on hover) -->
             <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] hover:bg-[#4F8EF7]/10 transition-all text-[12px]"
@@ -137,7 +130,6 @@
 
     </div>
 
-    <!-- Modals -->
     <CategoryModal
       :isOpen="isModalOpen"
       :isEditing="isEditing"
@@ -160,12 +152,12 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
-import AppSidebar    from '@/components/dashboard/AppSidebar.vue'
+import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import CategoryModal from '@/components/modals/CategoryModal.vue'
-import DeleteModal   from '@/components/modals/DeleteModal.vue'
+import DeleteModal from '@/components/modals/DeleteModal.vue'
 
 interface Category {
-  id:   number
+  id: number
   name: string
   type: 'income' | 'expense'
 }
@@ -175,18 +167,17 @@ interface CategoryForm {
   type: 'income' | 'expense'
 }
 
-// State
-const isMenuOpen        = ref(false)
-const isModalOpen       = ref(false)
-const isEditing         = ref(false)
-const editingId         = ref<number | null>(null)
-const editingForm       = ref<Partial<CategoryForm>>({})
+const isMenuOpen = ref(false)
+const isModalOpen = ref(false)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+const editingForm = ref<Partial<CategoryForm>>({})
 const isDeleteModalOpen = ref(false)
-const deleteTarget      = ref<Category | null>(null)
-const categories        = ref<Category[]>([])
-const loading           = ref(false)
-const search            = ref('')
-const activeTab         = ref<'all' | 'income' | 'expense'>('all')
+const deleteTarget = ref<Category | null>(null)
+const categories = ref<Category[]>([])
+const loading = ref(false)
+const search = ref('')
+const activeTab = ref<'all' | 'income' | 'expense'>('all')
 
 const tabs: { label: string; value: 'all' | 'income' | 'expense' }[] = [
   { label: 'Todas',    value: 'all'     },
@@ -194,7 +185,6 @@ const tabs: { label: string; value: 'all' | 'income' | 'expense' }[] = [
   { label: 'Receitas', value: 'income'  },
 ]
 
-// Computed
 const expenseCategories = computed(() => categories.value.filter(c => c.type === 'expense'))
 const incomeCategories  = computed(() => categories.value.filter(c => c.type === 'income'))
 
@@ -205,7 +195,6 @@ const filteredCategories = computed(() => {
   return list
 })
 
-// API
 const fetchCategories = async () => {
   loading.value = true
   try { const { data } = await api.get('/categories'); categories.value = data }
@@ -229,7 +218,7 @@ const confirmDelete = async () => {
   catch (e) { console.error(e) }
 }
 
-// Handlers
+
 const submitCategory = (form: CategoryForm) => isEditing.value ? updateCategory(form) : createCategory(form)
 
 const openModal = (cat?: Category) => {
@@ -245,8 +234,8 @@ const openModal = (cat?: Category) => {
   isModalOpen.value = true
 }
 
-const closeModal       = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
-const openDeleteModal  = (cat: Category) => { deleteTarget.value = cat; isDeleteModalOpen.value = true }
+const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
+const openDeleteModal = (cat: Category) => { deleteTarget.value = cat; isDeleteModalOpen.value = true }
 const closeDeleteModal = () => { isDeleteModalOpen.value = false; deleteTarget.value = null }
 
 onMounted(fetchCategories)

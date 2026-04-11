@@ -5,7 +5,6 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0">
 
-      <!-- Topbar -->
       <header class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4">
           <button
@@ -30,7 +29,6 @@
         </button>
       </header>
 
-      <!-- KPI Stats -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-4 overflow-hidden">
           <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#4F8EF7]" />
@@ -58,9 +56,7 @@
         </div>
       </section>
 
-      <!-- Filters bar -->
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-4 flex flex-wrap gap-3 items-end">
-        <!-- Search -->
         <div class="flex flex-col gap-1.5 min-w-[180px] flex-1">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">Buscar</label>
           <div class="relative">
@@ -73,7 +69,6 @@
           </div>
         </div>
 
-        <!-- Type -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">Tipo</label>
           <select v-model="filters.type" class="bg-[#07090F] border border-[#1E2D45] text-white text-[13px] px-3 py-2 rounded-xl outline-none cursor-pointer">
@@ -83,7 +78,6 @@
           </select>
         </div>
 
-        <!-- Category -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">Categoria</label>
           <select v-model="filters.categoryId" class="bg-[#07090F] border border-[#1E2D45] text-white text-[13px] px-3 py-2 rounded-xl outline-none cursor-pointer">

@@ -12,7 +12,6 @@
     >
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl w-full max-w-[420px] shadow-2xl" @click.stop>
 
-        <!-- Header -->
         <div class="flex items-center justify-between px-6 pt-6 pb-0">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 flex items-center justify-center rounded-xl bg-[#4F8EF7]/12 text-[#4F8EF7] text-base">
@@ -26,10 +25,8 @@
           >✕</button>
         </div>
 
-        <!-- Form -->
         <form class="p-6 flex flex-col gap-4" @submit.prevent="$emit('submit', form)">
 
-          <!-- Nome -->
           <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080]">Nome da Categoria</label>
             <input
@@ -41,7 +38,6 @@
             />
           </div>
 
-          <!-- Tipo -->
           <div class="flex flex-col gap-2">
             <label class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080]">Tipo</label>
             <div class="grid grid-cols-2 gap-3">
@@ -81,7 +77,6 @@
             </div>
           </div>
 
-          <!-- Buttons -->
           <div class="flex gap-3 mt-1">
             <button
               type="button"
@@ -115,7 +110,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'close'):                   void
+  (e: 'close'): void
   (e: 'submit', f: CategoryForm): void
 }>()
 

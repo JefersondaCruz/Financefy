@@ -7,9 +7,7 @@ use Carbon\Carbon;
 
 class AiRepository
 {
-    /**
-     * Fetch and aggregate the user's financial data for the last 3 months.
-     */
+
     public function getFinancialContext(int $userId): array
     {
         $since = Carbon::now()->subMonths(3)->startOfMonth();
@@ -34,8 +32,6 @@ class AiRepository
             'recurring'    => $this->recurringTransactions($transactions),
         ];
     }
-
-    // ── Private aggregators ────────────────────────────────────────────────
 
     private function groupByCategory($transactions, float $totalExpense): array
     {

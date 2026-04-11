@@ -4,9 +4,6 @@ namespace App\Prompts;
 
 class AiPrompt
 {
-    /**
-     * Build the system prompt with the user's real financial context.
-     */
     public static function system(array $ctx): string
     {
         $categoriesBlock = self::formatCategories($ctx['byCategory']);
@@ -56,8 +53,6 @@ Seu papel é analisar os dados financeiros reais do usuário e oferecer insights
 - Linguagem: informal mas profissional, como um consultor financeiro amigo
 PROMPT;
     }
-
-    // ── Formatters ─────────────────────────────────────────────────────────
 
     private static function formatCategories(array $categories): string
     {

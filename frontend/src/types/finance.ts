@@ -52,6 +52,8 @@ export interface GoalForm {
 }
 
 export interface DateFilter {
-  month: number
-  year: number
+  month?: number
+  year?: number
+  start_date: string
+  end_date: string
 }

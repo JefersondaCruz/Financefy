@@ -12,9 +12,6 @@ class AiController extends Controller
         private readonly AiService $aiService,
     ) {}
 
-    /**
-     * Return the full chat history from DB for the authenticated user.
-     */
     public function history(): JsonResponse
     {
         $messages = $this->aiService->getHistory(auth()->id());
@@ -22,9 +19,6 @@ class AiController extends Controller
         return response()->json($messages);
     }
 
-    /**
-     * Send a message. History context is managed server-side via Redis + DB.
-     */
     public function analyze(AiAnalyzeRequest $request): JsonResponse
     {
         try {
@@ -45,9 +39,6 @@ class AiController extends Controller
         }
     }
 
-    /**
-     * Clear full history: both DB and Redis.
-     */
     public function clear(): JsonResponse
     {
         $this->aiService->clearConversation(auth()->id());
