@@ -34,7 +34,24 @@ export interface TransactionForm {
   recurrence_type: string | null
 }
 
+export interface Goal {
+  id:             number
+  name:           string
+  icon:           string
+  target_amount:  number
+  current_amount: number
+  deadline?:      string | null
+}
+
+export interface GoalForm {
+  name:           string
+  icon:           string
+  target_amount:  number
+  current_amount: number
+  deadline:       string
+}
+
 export interface DateFilter {
-  start_date: string
-  end_date: string
+  month: number
+  year: number
 }

@@ -5,6 +5,10 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import UnderConstructionView from '@/views/UnderConstructionView.vue'
+import CategoriesView from '@/views/CategoriesView.vue'
+import AiView from '@/views/AiView.vue'
+import ProfileView from '@/views/ProfileView.vue'
+import TransactionsView from '@/views/TransactionsView.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/login' },
@@ -19,6 +23,24 @@ const routes: RouteRecordRaw[] = [
     component:UnderConstructionView,
     meta: { requiresAuth: true }
   },
+  { path: '/categories',
+    component:CategoriesView,
+    meta: { requiresAuth: true }
+  },
+  { path: '/ai',
+    component:AiView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/transactions',
+    component: TransactionsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    component: ProfileView,
+    meta: { requiresAuth: true },
+  }
 
 ]
 
