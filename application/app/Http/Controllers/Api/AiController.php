@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\AiAnalyzeRequest;
-use App\Services\AiService;
+use App\Http\Services\AiService;
 use Illuminate\Http\JsonResponse;
 
 class AiController extends Controller
@@ -14,35 +15,25 @@ class AiController extends Controller
 
     public function history(): JsonResponse
     {
-        $messages = $this->aiService->getHistory(auth()->id());
-
-        return response()->json($messages);
+        return response()->json(
+            $this->aiService->getHistory(auth()->id())
+        );
     }
 
     public function analyze(AiAnalyzeRequest $request): JsonResponse
     {
-        try {
-            $reply = $this->aiService->analyze(
-                userId:  auth()->id(),
+        return response()->json([
+            'reply' =>
+            $this->aiService->analyze(
+                userId: auth()->id(),
                 message: $request->validated('message'),
-            );
-
-            return response()->json(['reply' => $reply]);
-
-        } catch (\Exception $e) {
-            report($e);
-
-            return response()->json(
-                ['error' => 'Erro ao processar sua mensagem. Tente novamente.'],
-                500
-            );
-        }
+            )
+        ]);
     }
 
     public function clear(): JsonResponse
     {
         $this->aiService->clearConversation(auth()->id());
-
         return response()->json(['message' => 'Conversa limpa com sucesso.']);
     }
 }

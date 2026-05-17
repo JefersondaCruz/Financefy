@@ -104,9 +104,9 @@ interface CategoryForm {
 }
 
 const props = defineProps<{
-  isOpen:    boolean
+  isOpen: boolean
   isEditing: boolean
-  initial?:  Partial<CategoryForm>
+  initial?: Partial<CategoryForm>
 }>()
 
 defineEmits<{

@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    public function __construct(protected TransactionService $transactionService)
-    {
-    }
+    public function __construct(
+        protected TransactionService $transactionService
+    ) {}
 
     public function store(CreateTransactionRequest $request)
     {

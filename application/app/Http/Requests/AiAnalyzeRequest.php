@@ -14,9 +14,9 @@ class AiAnalyzeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message'           => ['required', 'string', 'max:1000'],
-            'history'           => ['nullable', 'array'],
-            'history.*.role'    => ['required', 'string', 'in:user,assistant'],
+            'message' => ['required', 'string', 'max:1000'],
+            'history' => ['nullable', 'array'],
+            'history.*.role' => ['required', 'string', 'in:user,assistant'],
             'history.*.content' => ['required', 'string'],
         ];
     }
@@ -25,7 +25,7 @@ class AiAnalyzeRequest extends FormRequest
     {
         return [
             'message.required' => 'A mensagem é obrigatória.',
-            'message.max'      => 'A mensagem não pode ter mais de 1000 caracteres.',
+            'message.max' => 'A mensagem não pode ter mais de 1000 caracteres.',
             'history.*.role.in' => 'Role inválido no histórico.',
         ];
     }

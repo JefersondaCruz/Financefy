@@ -56,7 +56,7 @@
               <div class="flex items-center gap-2.5">
                 <span
                   class="w-2 h-2 rounded-full shrink-0"
-                  :class="t.category.type === 'income'
+                  :class="t.category?.type === 'income'
                     ? 'bg-[#00E5A0] shadow-[0_0_6px_#00E5A0]'
                     : 'bg-[#FF3D6B] shadow-[0_0_6px_#FF3D6B]'"
                 />
@@ -67,18 +67,18 @@
             <td class="px-5 py-3.5">
               <span
                 class="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                :class="t.category.type === 'income'
+                :class="t.category?.type === 'income'
                   ? 'bg-[#00E5A0]/10 text-[#00E5A0]'
                   : 'bg-[#FF3D6B]/10 text-[#FF3D6B]'"
-              >{{ t.category.name }}</span>
+              >{{ t.category?.name ?? 'Sem categoria' }}</span>
             </td>
             <td class="px-5 py-3.5 text-[#4A6080] text-[12px]">{{ formatDate(t.transaction_date) }}</td>
             <td class="px-5 py-3.5 text-right">
               <span
                 class="font-mono text-[13px] font-bold"
-                :class="t.category.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'"
+                :class="t.category?.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'"
               >
-                {{ t.category.type === 'income' ? '+' : '−' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
+                {{ t.category?.type === 'income' ? '+' : '−' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
               </span>
             </td>
             <td class="px-5 py-3.5">
@@ -124,21 +124,21 @@ import type { Transaction } from '@/types/finance'
 
 defineProps<{
   transactions: Transaction[]
-  currentPage:  number
-  lastPage:     number
-  total:        number
+  currentPage: number
+  lastPage: number
+  total: number
 }>()
 
 defineEmits<{
-  (e: 'edit',        t: Transaction): void
-  (e: 'delete',      t: Transaction): void
-  (e: 'next-page'):  void
-  (e: 'prev-page'):  void
-  (e: 'search',      q: string): void
+  (e: 'edit', t: Transaction): void
+  (e: 'delete', t: Transaction): void
+  (e: 'next-page'): void
+  (e: 'prev-page'): void
+  (e: 'search', q: string): void
   (e: 'filter-type', v: string): void
 }>()
 
-const search     = ref('')
+const search = ref('')
 const typeFilter = ref('')
 
 const formatDate = (d: string) =>

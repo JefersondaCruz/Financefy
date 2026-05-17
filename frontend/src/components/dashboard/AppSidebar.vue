@@ -60,11 +60,11 @@ defineEmits<{ (e: 'close'): void }>()
 const auth = useAuthStore()
 
 const navItemDefs = [
-  { icon: '▦', label: 'Dashboard',    route: '/dashboard'    },
-  { icon: '↕', label: 'Transações',   route: '/transactions' },
-  { icon: '◎', label: 'Categorias',   route: '/categories'   },
-  { icon: '✦', label: 'IA Financeira',route: '/ai'           },
-  { icon: '⊙', label: 'Perfil',       route: '/profile'      },
+  { icon: '▦', label: 'Dashboard', route: '/dashboard' },
+  { icon: '↕', label: 'Transações', route: '/transactions' },
+  { icon: '◎', label: 'Categorias', route: '/categories' },
+  { icon: '✦', label: 'IA Financeira',route: '/ai' },
+  { icon: '⊙', label: 'Perfil', route: '/profile' },
 ]
 
 const navItems = computed(() =>

@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Http\Repositories;
 
 use Illuminate\Support\Facades\Redis;
+use App\Http\Repositories\AiMessageRepository;
 
 class ConversationRepository
 {
-    private const PREFIX       = 'ai_conversation:';
-    private const TTL          = 60 * 60 * 24 * 2;
+    private const PREFIX = 'ai_conversation:';
+    private const TTL = 60 * 60 * 24 * 2;
     private const MAX_MESSAGES = 40;
 
     public function __construct(
@@ -30,8 +31,8 @@ class ConversationRepository
 
     public function append(int $userId, string $userMessage, string $assistantReply): void
     {
-        $context   = $this->getContext($userId);
-        $context[] = ['role' => 'user',      'content' => $userMessage];
+        $context = $this->getContext($userId);
+        $context[] = ['role' => 'user', 'content' => $userMessage];
         $context[] = ['role' => 'assistant', 'content' => $assistantReply];
 
         if (count($context) > self::MAX_MESSAGES) {

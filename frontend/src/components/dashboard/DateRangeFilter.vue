@@ -41,10 +41,10 @@ const emit = defineEmits<{ (e: 'change', value: DateFilter): void }>()
 
 const now = new Date()
 const selectedMonth = ref(now.getMonth() + 1)
-const selectedYear  = ref(now.getFullYear())
+const selectedYear = ref(now.getFullYear())
 
 const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const years  = computed(() => {
+const years = computed(() => {
   const y = now.getFullYear()
   return Array.from({ length: 5 }, (_, i) => y - 4 + i)
 })
@@ -56,8 +56,8 @@ const emitChange = () => {
   const y = selectedYear.value
   const m = selectedMonth.value
   const start_date = `${y}-${String(m).padStart(2, '0')}-01`
-  const lastDay    = new Date(y, m, 0).getDate()
-  const end_date   = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const lastDay = new Date(y, m, 0).getDate()
+  const end_date = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
   emit('change', { start_date, end_date })
 }
 

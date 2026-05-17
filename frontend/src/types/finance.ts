@@ -10,8 +10,8 @@ export interface Transaction {
   amount: number
   transaction_date: string
   payment_method: string
-  category_id: number
-  category: Category
+  category_id: number | null
+  category: Category | null
   is_recurring: boolean
   recurrence_type: string | null
 }
@@ -25,7 +25,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface TransactionForm {
-  category_id: number
+  category_id: number | null
   description: string
   amount: number
   transaction_date: string
@@ -35,20 +35,20 @@ export interface TransactionForm {
 }
 
 export interface Goal {
-  id:             number
-  name:           string
-  icon:           string
+  id: number
+  name: string
+  icon: string
   target_amount:  number
   current_amount: number
-  deadline?:      string | null
+  deadline?: string | null
 }
 
 export interface GoalForm {
-  name:           string
-  icon:           string
+  name: string
+  icon: string
   target_amount:  number
   current_amount: number
-  deadline:       string
+  deadline: string
 }
 
 export interface DateFilter {

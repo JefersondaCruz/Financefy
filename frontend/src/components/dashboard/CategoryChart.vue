@@ -43,9 +43,10 @@ const COLORS = ['#4F8EF7','#00E5A0','#F59E0B','#FF3D6B','#A78BFA','#06B6D4','#FB
 const categoryData = computed(() => {
   const map: Record<string, number> = {}
   props.transactions
-    .filter(t => t.category.type === 'expense')
-    .forEach(t => { map[t.category.name] = (map[t.category.name] || 0) + Number(t.amount) })
-
+    .filter(t => t.category !== null && t.category.type === 'expense')
+    .forEach(t => {
+          map[t.category!.name] = (map[t.category!.name] || 0) + Number(t.amount)
+        })
   const total = Object.values(map).reduce((s, v) => s + v, 0)
   return Object.entries(map)
     .sort((a, b) => b[1] - a[1])

@@ -42,10 +42,10 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-  label:   string
-  value:   number
-  icon:    string
-  trend:   number
+  label: string
+  value: number
+  icon: string
+  trend: number
   variant: 'expense' | 'income' | 'balance'
 }>()
 

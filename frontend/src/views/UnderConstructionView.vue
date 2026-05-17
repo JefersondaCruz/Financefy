@@ -4,7 +4,6 @@
     <AppSidebar :isOpen="isMenuOpen" @close="isMenuOpen = false" />
 
     <div class="flex-1 flex flex-col">
-      <!-- Topbar -->
       <header class="flex items-center gap-4 px-6 py-5">
         <button
           class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors"
@@ -17,7 +16,6 @@
         <span class="text-[13px] text-[#4A6080] font-medium">Em construção</span>
       </header>
 
-      <!-- Content -->
       <main class="flex-1 flex flex-col items-center justify-center gap-6 px-6 text-center">
         <div class="w-24 h-24 rounded-3xl bg-[#0D1526] border border-[#1E2D45] flex items-center justify-center text-5xl">
           🚧

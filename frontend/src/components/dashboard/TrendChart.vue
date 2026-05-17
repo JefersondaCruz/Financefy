@@ -35,7 +35,7 @@ const chartData = computed(() => {
     const d = new Date(t.transaction_date)
     const key = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`
     if (!map[key]) map[key] = { income: 0, expense: 0 }
-    if (t.category.type === 'income') map[key].income  += Number(t.amount)
+    if (t.category?.type === 'income') map[key].income  += Number(t.amount)
     else                              map[key].expense += Math.abs(Number(t.amount))
   })
   const sorted = Object.keys(map)
@@ -47,8 +47,8 @@ const chartData = computed(() => {
     })
     .slice(-14)
   return {
-    labels:   sorted,
-    incomes:  sorted.map(k => map[k]?.income  || 0),
+    labels: sorted,
+    incomes: sorted.map(k => map[k]?.income || 0),
     expenses: sorted.map(k => map[k]?.expense || 0),
   }
 })

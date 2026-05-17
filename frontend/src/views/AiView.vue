@@ -188,10 +188,10 @@ const textareaEl = ref<HTMLTextAreaElement | null>(null)
 const canSend = computed(() => inputText.value.trim().length > 0 && !loading.value)
 
 const suggestions = [
-  { icon: '🔍', label: 'Análise geral',         text: 'Faça uma análise completa das minhas finanças e diga onde posso melhorar.' },
+  { icon: '🔍', label: 'Análise geral', text: 'Faça uma análise completa das minhas finanças e diga onde posso melhorar.' },
   { icon: '🛡️', label: 'Reserva de emergência', text: 'Quanto devo guardar de reserva de emergência com base nos meus gastos?' },
-  { icon: '📊', label: 'Onde mais gasto',        text: 'Em quais categorias estou gastando mais e o que é possível reduzir?' },
-  { icon: '💡', label: 'Dicas de economia',      text: 'Me dê 3 dicas práticas para economizar baseadas nos meus gastos recentes.' },
+  { icon: '📊', label: 'Onde mais gasto', text: 'Em quais categorias estou gastando mais e o que é possível reduzir?' },
+  { icon: '💡', label: 'Dicas de economia', text: 'Me dê 3 dicas práticas para economizar baseadas nos meus gastos recentes.' },
 ]
 
 const quickChips = [

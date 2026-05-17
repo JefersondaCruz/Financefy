@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen w-full flex bg-[#0f172a]">
 
-    <!-- ── Painel Esquerdo (branding) ── -->
     <div class="hidden lg:flex w-[40%] bg-[#0f172a] border-r border-[#334155] flex-col justify-between p-12 relative overflow-hidden">
       <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=2832&auto=format&fit=crop')] opacity-5 bg-cover bg-center"></div>
 
@@ -35,7 +34,6 @@
       </div>
     </div>
 
-    <!-- ── Painel Direito (formulário) ── -->
     <div class="flex-1 flex items-center justify-center p-8 bg-[#0b1120]">
       <div class="w-full max-w-md space-y-8">
 
@@ -44,7 +42,6 @@
           <p class="text-[#94a3b8]">Digite seus dados para acessar sua conta</p>
         </div>
 
-        <!-- Tab Login / Cadastro -->
         <div class="bg-[#1e293b] p-1 rounded-lg inline-flex w-full">
           <router-link
             to="/login"
@@ -60,7 +57,6 @@
           </router-link>
         </div>
 
-        <!-- Form -->
         <form @submit.prevent="handleLogin" class="space-y-5">
           <div>
             <label class="block text-sm text-[#94a3b8] mb-1">Email</label>
@@ -115,10 +111,10 @@ import type { AxiosError } from 'axios'
 import router from '@/router'
 
 const auth = useAuthStore()
-const email        = ref('')
-const password     = ref('')
+const email = ref('')
+const password = ref('')
 const errorMessage = ref('')
-const loading      = ref(false)
+const loading = ref(false)
 
 const features = [
   'Processamento de linguagem natural',

@@ -1,41 +1,38 @@
 <?php
 
-namespace App\Services;
+namespace App\Http\Services;
 
 use App\Prompts\AiPrompt;
-use App\Repositories\AiRepository;
-use App\Repositories\AiMessageRepository;
-use App\Repositories\ConversationRepository;
+use App\Http\Repositories\AiRepository;
+use App\Http\Repositories\AiMessageRepository;
+use App\Http\Repositories\ConversationRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class AiService
 {
-    private const API_URL = 'https://api.anthropic.com/v1/messages';
-    private const MODEL   = 'claude-sonnet-4-20250514';
+    private const API_URL = 'https://api.openai.com/v1/chat/completions';
+    private const MODEL = 'gpt-4o-mini';
 
     public function __construct(
-        private readonly AiRepository           $aiRepository,
-        private readonly AiMessageRepository    $messageRepository,
+        private readonly AiRepository $aiRepository,
+        private readonly AiMessageRepository $messageRepository,
         private readonly ConversationRepository $conversationRepository,
     ) {}
-
 
     public function analyze(int $userId, string $message): string
     {
         $this->messageRepository->save($userId, 'user', $message);
 
-        $context      = $this->aiRepository->getFinancialContext($userId);
+        $context = $this->aiRepository->getFinancialContext($userId);
         $systemPrompt = AiPrompt::system($context);
 
         $contextMessages = $this->conversationRepository->getContext($userId);
-
         $messages = [...$contextMessages, ['role' => 'user', 'content' => $message]];
 
         $reply = $this->callApi($systemPrompt, $messages);
 
         $this->messageRepository->save($userId, 'assistant', $reply);
-
         $this->conversationRepository->append($userId, $message, $reply);
 
         return $reply;
@@ -54,23 +51,26 @@ class AiService
 
     private function callApi(string $systemPrompt, array $messages): string
     {
+        $payload = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ...$messages,
+        ];
+
         $response = Http::withHeaders([
-            'x-api-key'         => config('services.anthropic.key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type'      => 'application/json',
+            'Authorization' => 'Bearer ' . config('services.openai.key'),
+            'Content-Type'  => 'application/json',
         ])
         ->timeout(30)
         ->post(self::API_URL, [
-            'model'      => self::MODEL,
+            'model' => self::MODEL,
             'max_tokens' => 1024,
-            'system'     => $systemPrompt,
-            'messages'   => $messages,
+            'messages' => $payload,
         ]);
 
         if ($response->failed()) {
             throw new \Exception('Erro ao contatar a API da IA: ' . $response->body());
         }
 
-        return $response->json('content.0.text');
+        return $response->json('choices.0.message.content');
     }
 }

@@ -10,8 +10,10 @@ use App\Http\Services\AuthService;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthService $AuthService, private UserService $userService)
-    {}
+    public function __construct(
+        private readonly AuthService $AuthService,
+        private UserService $userService
+    ) {}
 
     public function login(LoginRequest $request)
     {
@@ -21,7 +23,6 @@ class AuthController extends Controller
     public function logout()
     {
         $this->AuthService->logout();
-
         return response()->json(['message' => 'Logout realizado com sucesso.\\']);
     }
 

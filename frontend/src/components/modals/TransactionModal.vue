@@ -137,22 +137,22 @@ import { reactive, watch } from 'vue'
 import type { Category, TransactionForm } from '@/types/finance'
 
 const props = defineProps<{
-  isOpen:     boolean
-  isEditing:  boolean
+  isOpen: boolean
+  isEditing: boolean
   categories: Category[]
-  initial?:   Partial<TransactionForm>
+  initial?: Partial<TransactionForm>
 }>()
 
 defineEmits<{
-  (e: 'close'):                      void
+  (e: 'close'): void
   (e: 'submit', f: TransactionForm): void
 }>()
 
 const paymentMethods = [
-  { value: 'pix',         label: 'Pix',     icon: '⚡' },
+  { value: 'pix', label: 'Pix', icon: '⚡' },
   { value: 'credit_card', label: 'Crédito', icon: '💳' },
-  { value: 'money',       label: 'Dinheiro',icon: '💵' },
-  { value: 'others',      label: 'Outros',  icon: '◦'  },
+  { value: 'money', label: 'Dinheiro',icon: '💵' },
+  { value: 'others', label: 'Outros',  icon: '◦'  },
 ]
 
 const defaultForm = (): TransactionForm => ({

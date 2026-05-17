@@ -102,7 +102,10 @@
               {{ cat.type === 'income' ? '📈' : '📉' }}
             </div>
 
-            <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div
+                v-if="cat.user_id !== null"
+                class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
               <button
                 class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] hover:bg-[#4F8EF7]/10 transition-all text-[12px]"
                 @click="openModal(cat)"
@@ -160,6 +163,7 @@ interface Category {
   id: number
   name: string
   type: 'income' | 'expense'
+  user_id: number | null
 }
 
 interface CategoryForm {
@@ -180,9 +184,9 @@ const search = ref('')
 const activeTab = ref<'all' | 'income' | 'expense'>('all')
 
 const tabs: { label: string; value: 'all' | 'income' | 'expense' }[] = [
-  { label: 'Todas',    value: 'all'     },
+  { label: 'Todas', value: 'all' },
   { label: 'Despesas', value: 'expense' },
-  { label: 'Receitas', value: 'income'  },
+  { label: 'Receitas', value: 'income' },
 ]
 
 const expenseCategories = computed(() => categories.value.filter(c => c.type === 'expense'))
@@ -218,17 +222,16 @@ const confirmDelete = async () => {
   catch (e) { console.error(e) }
 }
 
-
 const submitCategory = (form: CategoryForm) => isEditing.value ? updateCategory(form) : createCategory(form)
 
 const openModal = (cat?: Category) => {
   if (cat) {
-    isEditing.value   = true
-    editingId.value   = cat.id
+    isEditing.value = true
+    editingId.value = cat.id
     editingForm.value = { name: cat.name, type: cat.type }
   } else {
-    isEditing.value   = false
-    editingId.value   = null
+    isEditing.value = false
+    editingId.value = null
     editingForm.value = {}
   }
   isModalOpen.value = true

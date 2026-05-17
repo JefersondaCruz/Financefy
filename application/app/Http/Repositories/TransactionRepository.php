@@ -23,5 +23,4 @@ class TransactionRepository extends BaseRepository
             ->orderByDesc('transaction_date')
             ->paginate($perPage);
     }
-
 }

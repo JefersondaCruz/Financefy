@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Http\Repositories;
 
 use App\Models\AiMessage;
 use Illuminate\Support\Collection;

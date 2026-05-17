@@ -2,56 +2,58 @@
 
 namespace App\Prompts;
 
+use Illuminate\Support\Collection;
+
 class AiPrompt
 {
+    # TODO: Validar e incrementar o prompt (ser mais acertivo e etc)
     public static function system(array $ctx): string
     {
-        $categoriesBlock = self::formatCategories($ctx['byCategory']);
-        $monthsBlock     = self::formatMonths($ctx['byMonth']);
-        $topBlock        = self::formatTopExpenses($ctx['topExpenses']);
-        $recurringBlock  = self::formatRecurring($ctx['recurring']);
-
         $savingsRate = $ctx['totalIncome'] > 0
             ? round((($ctx['totalIncome'] - $ctx['totalExpense']) / $ctx['totalIncome']) * 100, 1)
             : 0;
 
-        $totalIncome  = number_format($ctx['totalIncome'],  2, ',', '.');
-        $totalExpense = number_format($ctx['totalExpense'], 2, ',', '.');
-        $netBalance   = number_format($ctx['netBalance'],   2, ',', '.');
+        $totalIncome = self::brl($ctx['totalIncome']);
+        $totalExpense = self::brl($ctx['totalExpense']);
+        $netBalance = self::brl($ctx['netBalance']);
+
+        $categoriesBlock = self::formatCategories($ctx['byCategory']);
+        $monthsBlock = self::formatMonths($ctx['byMonth']);
+        $topBlock = self::formatTopExpenses($ctx['topExpenses']);
+        $recurringBlock = self::formatRecurring($ctx['recurring']);
 
         return <<<PROMPT
-Você é a IA financeira pessoal do usuário, integrada ao sistema Finflow.
-Seu papel é analisar os dados financeiros reais do usuário e oferecer insights práticos, diretos e personalizados em português brasileiro.
+                Você é a IA financeira pessoal do usuário, integrada ao sistema Financefy.
+                Seu papel é analisar os dados financeiros reais do usuário e oferecer insights práticos, diretos e personalizados em português brasileiro.
 
-## DADOS FINANCEIROS REAIS (últimos 3 meses)
+                ## DADOS FINANCEIROS REAIS (últimos 3 meses)
 
-**Resumo geral:**
-- Receitas totais: R$ {$totalIncome}
-- Despesas totais: R$ {$totalExpense}
-- Saldo líquido: R$ {$netBalance}
-- Taxa de poupança atual: {$savingsRate}%
+                **Resumo geral:**
+                - Receitas totais: R$ {$totalIncome}
+                - Despesas totais: R$ {$totalExpense}
+                - Saldo líquido: R$ {$netBalance}
+                - Taxa de poupança atual: {$savingsRate}%
 
-**Despesas por categoria:**
-{$categoriesBlock}
+                **Despesas por categoria:**
+                {$categoriesBlock}
 
-**Evolução mensal:**
-{$monthsBlock}
+                **Evolução mensal:**
+                {$monthsBlock}
 
-**Top 5 maiores despesas:**
-{$topBlock}
+                **Top 5 maiores despesas:**
+                {$topBlock}
 
-**Transações recorrentes:**
-{$recurringBlock}
+                **Transações recorrentes:**
+                {$recurringBlock}
 
-## DIRETRIZES
-
-- Use os dados acima para embasar todas as suas análises — nunca invente valores
-- Seja direto e use os números reais do usuário nos exemplos
-- Dê sugestões concretas e alcançáveis, não conselhos genéricos
-- Use **negrito** e listas quando ajudar na clareza
-- Se o usuário pedir algo fora do contexto financeiro, redirecione gentilmente
-- Linguagem: informal mas profissional, como um consultor financeiro amigo
-PROMPT;
+                ## DIRETRIZES
+                - Use os dados acima para embasar todas as suas análises — nunca invente valores
+                - Seja direto e use os números reais do usuário nos exemplos
+                - Dê sugestões concretas e alcançáveis, não conselhos genéricos
+                - Use **negrito** e listas quando ajudar na clareza
+                - Se o usuário pedir algo fora do contexto financeiro, redirecione gentilmente
+                - Linguagem: informal mas profissional, como um consultor financeiro amigo
+                PROMPT;
     }
 
     private static function formatCategories(array $categories): string
@@ -60,10 +62,15 @@ PROMPT;
             return '  Nenhuma despesa registrada no período.';
         }
 
-        return collect($categories)->map(function ($c) {
-            $total = number_format($c['total'], 2, ',', '.');
-            return "  - {$c['name']}: R$ {$total} ({$c['pct']}% das despesas, {$c['count']} transações)";
-        })->join("\n");
+        return Collection::make($categories)
+            ->map(fn ($c) => sprintf(
+                '  - %s: R$ %s (%s%% das despesas, %d transações)',
+                $c['name'],
+                self::brl($c['total']),
+                $c['pct'],
+                $c['count'],
+            ))
+            ->join("\n");
     }
 
     private static function formatMonths(array $months): string
@@ -72,11 +79,14 @@ PROMPT;
             return '  Sem dados mensais disponíveis.';
         }
 
-        return collect($months)->map(function ($m) {
-            $income  = number_format($m['income'],  2, ',', '.');
-            $expense = number_format($m['expense'], 2, ',', '.');
-            return "  - {$m['month']}: Receitas R$ {$income} | Despesas R$ {$expense}";
-        })->join("\n");
+        return Collection::make($months)
+            ->map(fn ($m) => sprintf(
+                '  - %s: Receitas R$ %s | Despesas R$ %s',
+                $m['month'],
+                self::brl($m['income']),
+                self::brl($m['expense']),
+            ))
+            ->join("\n");
     }
 
     private static function formatTopExpenses(array $expenses): string
@@ -85,10 +95,15 @@ PROMPT;
             return '  Nenhuma despesa registrada.';
         }
 
-        return collect($expenses)->map(function ($t) {
-            $amount = number_format($t['amount'], 2, ',', '.');
-            return "  - {$t['description']} ({$t['category']}): R$ {$amount} em {$t['date']}";
-        })->join("\n");
+        return Collection::make($expenses)
+            ->map(fn ($t) => sprintf(
+                '  - %s (%s): R$ %s em %s',
+                $t['description'],
+                $t['category'],
+                self::brl($t['amount']),
+                $t['date'],
+            ))
+            ->join("\n");
     }
 
     private static function formatRecurring(array $recurring): string
@@ -97,10 +112,18 @@ PROMPT;
             return '  Nenhuma transação recorrente registrada.';
         }
 
-        return collect($recurring)->map(function ($r) {
-            $amount = number_format($r['amount'], 2, ',', '.');
-            $type   = $r['type'] === 'income' ? 'receita' : 'despesa';
-            return "  - {$r['description']}: R$ {$amount} ({$type})";
-        })->join("\n");
+        return Collection::make($recurring)
+            ->map(fn ($r) => sprintf(
+                '  - %s: R$ %s (%s)',
+                $r['description'],
+                self::brl($r['amount']),
+                $r['type'] === 'income' ? 'receita' : 'despesa',
+            ))
+            ->join("\n");
+    }
+
+    private static function brl(float|int $value): string
+    {
+        return number_format($value, 2, ',', '.');
     }
 }

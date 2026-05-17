@@ -86,7 +86,6 @@
           </select>
         </div>
 
-        <!-- Payment method -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">Pagamento</label>
           <select v-model="filters.paymentMethod" class="bg-[#07090F] border border-[#1E2D45] text-white text-[13px] px-3 py-2 rounded-xl outline-none cursor-pointer">
@@ -98,7 +97,6 @@
           </select>
         </div>
 
-        <!-- Date from -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">De</label>
           <input
@@ -108,7 +106,6 @@
           />
         </div>
 
-        <!-- Date to -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080]">Até</label>
           <input
@@ -118,7 +115,6 @@
           />
         </div>
 
-        <!-- Clear filters -->
         <button
           v-if="hasActiveFilters"
           class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#FF3D6B]/30 text-[12px] font-semibold text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-all self-end"
@@ -126,9 +122,7 @@
         >✕ Limpar</button>
       </div>
 
-      <!-- Table -->
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl overflow-hidden">
-        <!-- Table header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-[#1E2D45]">
           <div class="flex items-center gap-3">
             <h4 class="text-sm font-bold text-white">Resultados</h4>
@@ -165,7 +159,7 @@
                 <td class="px-5 py-3.5">
                   <div class="flex items-center gap-2.5">
                     <span class="w-2 h-2 rounded-full shrink-0"
-                      :class="t.category.type === 'income' ? 'bg-[#00E5A0] shadow-[0_0_6px_#00E5A0]' : 'bg-[#FF3D6B] shadow-[0_0_6px_#FF3D6B]'"
+                      :class="t.category?.type === 'income' ? 'bg-[#00E5A0] shadow-[0_0_6px_#00E5A0]' : 'bg-[#FF3D6B] shadow-[0_0_6px_#FF3D6B]'"
                     />
                     <span class="text-white font-medium text-[13px]">{{ t.description }}</span>
                     <span v-if="t.is_recurring" class="text-[10px] text-[#4F8EF7] bg-[#4F8EF7]/12 px-1.5 py-0.5 rounded font-semibold">↻</span>
@@ -173,8 +167,8 @@
                 </td>
                 <td class="px-5 py-3.5">
                   <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                    :class="t.category.type === 'income' ? 'bg-[#00E5A0]/10 text-[#00E5A0]' : 'bg-[#FF3D6B]/10 text-[#FF3D6B]'">
-                    {{ t.category.name }}
+                    :class="t.category?.type === 'income' ? 'bg-[#00E5A0]/10 text-[#00E5A0]' : 'bg-[#FF3D6B]/10 text-[#FF3D6B]'">
+                    {{ t.category?.name }}
                   </span>
                 </td>
                 <td class="px-5 py-3.5">
@@ -185,8 +179,8 @@
                 <td class="px-5 py-3.5 text-[12px] text-[#4A6080]">{{ formatDate(t.transaction_date) }}</td>
                 <td class="px-5 py-3.5 text-right">
                   <span class="font-mono text-[13px] font-bold"
-                    :class="t.category.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
-                    {{ t.category.type === 'income' ? '+' : '−' }} R$ {{ fmt(Math.abs(Number(t.amount))) }}
+                    :class="t.category?.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
+                    {{ t.category?.type === 'income' ? '+' : '−' }} R$ {{ fmt(Math.abs(Number(t.amount))) }}
                   </span>
                 </td>
                 <td class="px-5 py-3.5">
@@ -206,7 +200,6 @@
           </table>
         </div>
 
-        <!-- Pagination -->
         <div class="flex items-center justify-between px-6 py-3.5 border-t border-[#1E2D45]">
           <span class="text-[12px] text-[#4A6080]">
             Mostrando {{ paginationFrom }}–{{ paginationTo }} de {{ filteredTransactions.length }}
@@ -228,7 +221,6 @@
 
     </div>
 
-    <!-- Modals -->
     <TransactionModal
       :isOpen="isModalOpen"
       :isEditing="isEditing"
@@ -250,34 +242,32 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import type { Transaction, Category, TransactionForm } from '@/types/finance'
-import AppSidebar       from '@/components/dashboard/AppSidebar.vue'
+import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
-import DeleteModal      from '@/components/modals/DeleteModal.vue'
+import DeleteModal from '@/components/modals/DeleteModal.vue'
 
-// ── State ──────────────────────────────────────────────────────────────────
-const isMenuOpen        = ref(false)
-const isModalOpen       = ref(false)
-const isEditing         = ref(false)
-const editingId         = ref<number | null>(null)
-const editingForm       = ref<Partial<TransactionForm>>({})
+const isMenuOpen = ref(false)
+const isModalOpen = ref(false)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+const editingForm = ref<Partial<TransactionForm>>({})
 const isDeleteModalOpen = ref(false)
-const deleteTarget      = ref<Transaction | null>(null)
-const loading           = ref(false)
-const allTransactions   = ref<Transaction[]>([])
-const categories        = ref<Category[]>([])
-const currentPage       = ref(1)
-const perPage           = 15
+const deleteTarget = ref<Transaction | null>(null)
+const loading = ref(false)
+const allTransactions = ref<Transaction[]>([])
+const categories = ref<Category[]>([])
+const currentPage = ref(1)
+const perPage = 15
 
 const filters = ref({
-  search:        '',
-  type:          '',
-  categoryId:    '' as number | '',
+  search: '',
+  type: '',
+  categoryId: '' as number | '',
   paymentMethod: '',
-  dateFrom:      '',
-  dateTo:        '',
+  dateFrom: '',
+  dateTo: '',
 })
 
-// ── Computed ───────────────────────────────────────────────────────────────
 const hasActiveFilters = computed(() =>
   Object.values(filters.value).some(v => v !== '')
 )
@@ -288,7 +278,7 @@ const filteredTransactions = computed(() => {
   if (filters.value.search)
     list = list.filter(t => t.description.toLowerCase().includes(filters.value.search.toLowerCase()))
   if (filters.value.type)
-    list = list.filter(t => t.category.type === filters.value.type)
+    list = list.filter(t => t.category?.type === filters.value.type)
   if (filters.value.categoryId)
     list = list.filter(t => t.category_id === Number(filters.value.categoryId))
   if (filters.value.paymentMethod)
@@ -304,22 +294,26 @@ const filteredTransactions = computed(() => {
 const lastPage        = computed(() => Math.max(1, Math.ceil(filteredTransactions.value.length / perPage)))
 const paginationFrom  = computed(() => filteredTransactions.value.length === 0 ? 0 : (currentPage.value - 1) * perPage + 1)
 const paginationTo    = computed(() => Math.min(currentPage.value * perPage, filteredTransactions.value.length))
-const paginatedTransactions = computed(() =>
-  filteredTransactions.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage)
-)
+const paginatedTransactions = computed(() => {
+  return filteredTransactions.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage)
+})
 
-const totalIncome  = computed(() => allTransactions.value.filter(t => t.category.type === 'income').reduce((s, t) => s + Number(t.amount), 0))
-const totalExpense = computed(() => allTransactions.value.filter(t => t.category.type === 'expense').reduce((s, t) => s + Number(t.amount), 0))
+const totalIncome  = computed(() => allTransactions.value.filter(t => t.category?.type === 'income').reduce((s, t) => s + Number(t.amount), 0))
+const totalExpense = computed(() => allTransactions.value.filter(t => t.category?.type === 'expense').reduce((s, t) => s + Number(t.amount), 0))
 const netBalance   = computed(() => totalIncome.value - totalExpense.value)
 
-// Reset page when filters change
 watch(filters, () => { currentPage.value = 1 }, { deep: true })
 
-// ── API ────────────────────────────────────────────────────────────────────
 const fetchAll = async () => {
   loading.value = true
   try {
-    const { data } = await api.get('/transactions', { params: { per_page: 9999 } })
+    const { data } = await api.get('/transactions', {
+      params: {
+        per_page: 9999,
+        start_date: filters.value.dateFrom || '2000-01-01',
+        end_date:   filters.value.dateTo   || new Date().toISOString().slice(0, 10),
+      },
+    })
     allTransactions.value = data.data
   } catch (e) { console.error(e) }
   finally { loading.value = false }
@@ -348,7 +342,6 @@ const confirmDelete = async () => {
   } catch (e) { console.error(e) }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 const openModal = (t?: Transaction) => {
   if (t) {
     isEditing.value = true; editingId.value = t.id
@@ -358,11 +351,11 @@ const openModal = (t?: Transaction) => {
   }
   isModalOpen.value = true
 }
-const closeModal       = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
+const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
 const openDeleteModal  = (t: Transaction) => { deleteTarget.value = t; isDeleteModalOpen.value = true }
-const clearFilters     = () => { filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' } }
+const clearFilters = () => { filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' } }
 
-const fmt         = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v)
+const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v)
 const formatDate  = (d: string) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 const paymentIcon = (m: string) => ({ pix: '⚡', credit_card: '💳', money: '💵', others: '◦' }[m] ?? '◦')
 const paymentLabel= (m: string) => ({ pix: 'Pix', credit_card: 'Crédito', money: 'Dinheiro', others: 'Outros' }[m] ?? m)

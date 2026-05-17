@@ -113,13 +113,17 @@ const typeFilter  = ref('')
 const now = new Date()
 const dateFilter = ref<DateFilter>({
   start_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
-  end_date:   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
+  end_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
 })
 const totalExpenses = computed(() =>
-  transactions.value.filter(t => t.category.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+  transactions.value
+    .filter(t => t.category?.type === 'expense')
+    .reduce((s, t) => s + Number(t.amount), 0)
 )
 const totalIncome = computed(() =>
-  transactions.value.filter(t => t.category.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  transactions.value
+    .filter(t => t.category?.type === 'income')
+    .reduce((s, t) => s + Number(t.amount), 0)
 )
 const netBalance = computed(() => totalIncome.value - totalExpenses.value)
 
@@ -128,7 +132,7 @@ const filteredTransactions = computed(() => {
   if (searchQuery.value)
     list = list.filter(t => t.description.toLowerCase().includes(searchQuery.value.toLowerCase()))
   if (typeFilter.value)
-    list = list.filter(t => t.category.type === typeFilter.value)
+    list = list.filter(t => t.category?.type === typeFilter.value)
   return list
 })
 
