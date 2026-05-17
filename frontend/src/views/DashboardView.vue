@@ -44,6 +44,51 @@
         <TrendChart    :transactions="transactions" />
       </section>
 
+    <div
+      class="bg-[#0D1526] border border-[#4F8EF7]/25 rounded-2xl p-6 flex flex-col gap-5"
+    >
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 shrink-0 bg-[#4F8EF7]/12 border border-[#4F8EF7]/25 rounded-[14px] flex items-center justify-center text-[22px]">
+          ◈
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <p class="text-[15px] font-bold text-[#E8EEFF]">Converse com sua IA Financeira</p>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#4F8EF7]/15 text-[#4F8EF7] tracking-widest uppercase">
+              Beta
+            </span>
+          </div>
+          <p class="text-[13px] text-[#4A6080] leading-relaxed">
+            Analise seus gastos, identifique padrões e receba dicas personalizadas com base nos seus dados reais.
+            A IA tem acesso ao seu histórico dos últimos 3 meses.
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span
+          v-for="chip in iaChips"
+          :key="chip"
+          class="px-3 py-1.5 rounded-full bg-white/[0.04] border border-[#1E2D45] text-[12px] text-[#4A6080]"
+        >
+          {{ chip }}
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-[#1E2D45] pt-4 flex-wrap gap-3">
+        <p class="text-[12px] text-[#4A6080] flex items-center gap-1.5">
+          <span class="text-sm">ℹ️</span>
+          A IA analisa e aconselha — o cadastro de transações é feito manualmente por enquanto.
+        </p>
+        <RouterLink
+          to="/ai"
+          class="flex items-center gap-2 bg-[#4F8EF7] hover:bg-[#3a7de0] text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-colors hover:-translate-y-px duration-150"
+        >
+          Abrir IA Financeira
+          <span class="text-base leading-none">→</span>
+        </RouterLink>
+      </div>
+    </div>
+
       <TransactionsTable
         :transactions="filteredTransactions"
         :current-page="currentPage"
@@ -126,6 +171,12 @@ const totalIncome = computed(() =>
     .reduce((s, t) => s + Number(t.amount), 0)
 )
 const netBalance = computed(() => totalIncome.value - totalExpenses.value)
+
+const iaChips = [
+  '"Onde estou gastando mais?"',
+  '"Como está minha taxa de poupança?"',
+  '"Dicas para economizar"',
+]
 
 const filteredTransactions = computed(() => {
   let list = transactions.value

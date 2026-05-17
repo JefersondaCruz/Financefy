@@ -17,9 +17,26 @@
     :class="isOpen ? 'translate-x-0' : '-translate-x-full'"
   >
     <div class="flex items-center gap-3 px-6 py-7 border-b border-[#1E2D45]">
-      <span class="text-[#4F8EF7] text-2xl leading-none">◈</span>
-      <span class="text-white font-extrabold text-lg tracking-[0.06em] uppercase">Finflow</span>
-    </div>
+  <div class="w-10 h-10 bg-[#3B82F6] rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </div>
+
+  <span class="text-white font-extrabold text-lg tracking-[0.06em] uppercase">
+    Financefy
+  </span>
+</div>
 
     <nav class="flex-1 px-3 py-4 flex flex-col gap-0.5">
       <button

@@ -21,7 +21,7 @@
           Crie sua conta gratuitamente e tenha controle total das suas finanças de forma simples e intuitiva.
         </p>
 
-        <div class="space-y-5">
+        <div class="flex flex-col gap-5">
           <div v-for="feature in features" :key="feature" class="flex items-center gap-3">
             <span class="text-[#10b981] text-lg">✓</span>
             <span class="text-[#f8fafc]">{{ feature }}</span>
@@ -35,7 +35,7 @@
     </div>
 
     <div class="flex-1 flex items-center justify-center p-8 bg-[#0b1120]">
-      <div class="w-full max-w-md space-y-8">
+      <div class="w-full max-w-md flex flex-col gap-8">
 
         <div class="text-center lg:text-left">
           <h2 class="text-3xl font-bold text-white mb-2">Criar uma conta</h2>
@@ -45,21 +45,25 @@
         <div class="bg-[#1e293b] p-1 rounded-lg inline-flex w-full">
           <router-link
             to="/login"
-            class="flex-1 py-2 text-sm font-medium rounded-md text-center transition-all text-[#94a3b8] hover:text-white"
+            active-class=""
+            exact-active-class=""
+            class="flex-1 py-2 text-sm font-medium rounded-md text-center transition-all text-[#64748b] hover:text-[#cbd5e1]"
           >
             Entrar
           </router-link>
           <router-link
             to="/register"
+            active-class=""
+            exact-active-class=""
             class="flex-1 py-2 text-sm font-medium rounded-md text-center transition-all bg-[#3b82f6] text-white shadow-sm"
           >
             Cadastrar
           </router-link>
         </div>
 
-        <form @submit.prevent="handleRegister" class="space-y-5">
+        <form @submit.prevent="handleRegister" class="flex flex-col gap-6">
           <div>
-            <label class="block text-sm text-[#94a3b8] mb-1">Nome completo</label>
+            <label class="block text-sm text-[#94a3b8] mb-1.5">Nome completo</label>
             <input
               type="text"
               v-model="name"
@@ -70,7 +74,7 @@
           </div>
 
           <div>
-            <label class="block text-sm text-[#94a3b8] mb-1">Telefone</label>
+            <label class="block text-sm text-[#94a3b8] mb-1.5">Telefone</label>
             <input
               type="tel"
               v-model="phone"
@@ -81,7 +85,7 @@
           </div>
 
           <div>
-            <label class="block text-sm text-[#94a3b8] mb-1">Email</label>
+            <label class="block text-sm text-[#94a3b8] mb-1.5">Email</label>
             <input
               type="email"
               v-model="email"
@@ -92,7 +96,7 @@
           </div>
 
           <div>
-            <label class="block text-sm text-[#94a3b8] mb-1">Senha</label>
+            <label class="block text-sm text-[#94a3b8] mb-1.5">Senha</label>
             <input
               type="password"
               v-model="password"
