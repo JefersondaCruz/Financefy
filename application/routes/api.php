@@ -20,6 +20,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/transactions/{id}', [TransactionController::class, 'destroy']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::post('/categories', [CategoryController::class, 'store']);
+    Route::put('/categories/{id}', [CategoryController::class, 'update']);
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
     Route::post('/ai/analyze', [AiController::class, 'analyze']);
     Route::get('/ai/history', [AiController::class, 'history']);

@@ -35,6 +35,13 @@
 
       <div class="flex-1 flex flex-col overflow-hidden">
 
+      <p
+        v-if="errorMessage"
+        class="mx-6 mt-4 rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B] md:mx-8"
+      >
+        {{ errorMessage }}
+      </p>
+
       <div v-if="loadingHistory" class="flex-1 flex items-center justify-center">
         <div class="flex flex-col items-center gap-3">
           <div class="flex gap-1.5">
@@ -181,6 +188,7 @@ const isMenuOpen = ref(false)
 const inputText = ref('')
 const loading = ref(false)
 const loadingHistory = ref(true)
+const errorMessage = ref('')
 const messages = ref<Message[]>([])
 const messagesEl = ref<HTMLElement | null>(null)
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
@@ -203,12 +211,13 @@ const quickChips = [
 ]
 
 onMounted(async () => {
+  errorMessage.value = ''
   try {
     const { data } = await api.get('/ai/history')
     messages.value = data
     await scrollToBottom()
-  } catch (e) {
-    console.error('Erro ao carregar histórico:', e)
+  } catch {
+    errorMessage.value = 'Não foi possível carregar o histórico da conversa.'
   } finally {
     loadingHistory.value = false
   }

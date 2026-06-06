@@ -32,6 +32,17 @@ class CategoryRepository extends BaseRepository
         return Category::create($data);
     }
 
+    public function update(array $data, string $id)
+    {
+        $category = Category::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        $category->update($data);
+
+        return $category->fresh();
+    }
+
     public function destroy(string $id)
     {
         $category = Category::where('id', $id)

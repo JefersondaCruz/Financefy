@@ -5,21 +5,12 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0">
 
-      <header class="flex items-center justify-between flex-wrap gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors"
-            @click="isMenuOpen = true"
-          >
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-          </button>
-          <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">Transações</h1>
-            <p class="text-[12px] text-[#4A6080] mt-0.5">Histórico completo de movimentações</p>
-          </div>
-        </div>
+      <AppPageHeader
+        title="Transações"
+        subtitle="Histórico completo de movimentações"
+        @open-menu="isMenuOpen = true"
+      >
+        <template #actions>
         <button
           class="flex items-center gap-2 bg-[#4F8EF7] hover:bg-[#3a7de0] text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-all hover:-translate-y-px whitespace-nowrap"
           @click="openModal()"
@@ -27,7 +18,8 @@
           <span class="text-lg font-light leading-none">+</span>
           Nova Transação
         </button>
-      </header>
+        </template>
+      </AppPageHeader>
 
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-4 overflow-hidden">
@@ -122,102 +114,44 @@
         >✕ Limpar</button>
       </div>
 
-      <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-[#1E2D45]">
-          <div class="flex items-center gap-3">
-            <h4 class="text-sm font-bold text-white">Resultados</h4>
-            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.06] text-[#4A6080]">
-              {{ filteredTransactions.length }} encontradas
-            </span>
-          </div>
-        </div>
+      <AppAlert
+        v-if="errorMessage"
+        :message="errorMessage"
+        variant="error"
+        :action-label="canRetryLoad ? 'Tentar novamente' : ''"
+        @action="loadData"
+      />
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-black/20">
-                <th class="px-5 py-3 text-left text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Descrição</th>
-                <th class="px-5 py-3 text-left text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Categoria</th>
-                <th class="px-5 py-3 text-left text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Pagamento</th>
-                <th class="px-5 py-3 text-left text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Data</th>
-                <th class="px-5 py-3 text-right text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Valor</th>
-                <th class="px-5 py-3 text-right text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] border-b border-[#1E2D45]">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading">
-                <td colspan="6" class="px-5 py-12 text-center text-[#4A6080] text-sm">Carregando...</td>
-              </tr>
-              <tr v-else-if="paginatedTransactions.length === 0">
-                <td colspan="6" class="px-5 py-12 text-center text-[#4A6080] text-sm">Nenhuma transação encontrada</td>
-              </tr>
-              <tr
-                v-for="t in paginatedTransactions"
-                :key="t.id"
-                class="border-b border-[#1E2D45] last:border-0 hover:bg-white/[0.02] transition-colors"
-              >
-                <td class="px-5 py-3.5">
-                  <div class="flex items-center gap-2.5">
-                    <span class="w-2 h-2 rounded-full shrink-0"
-                      :class="t.category?.type === 'income' ? 'bg-[#00E5A0] shadow-[0_0_6px_#00E5A0]' : 'bg-[#FF3D6B] shadow-[0_0_6px_#FF3D6B]'"
-                    />
-                    <span class="text-white font-medium text-[13px]">{{ t.description }}</span>
-                    <span v-if="t.is_recurring" class="text-[10px] text-[#4F8EF7] bg-[#4F8EF7]/12 px-1.5 py-0.5 rounded font-semibold">↻</span>
-                  </div>
-                </td>
-                <td class="px-5 py-3.5">
-                  <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                    :class="t.category?.type === 'income' ? 'bg-[#00E5A0]/10 text-[#00E5A0]' : 'bg-[#FF3D6B]/10 text-[#FF3D6B]'">
-                    {{ t.category?.name }}
-                  </span>
-                </td>
-                <td class="px-5 py-3.5">
-                  <span class="flex items-center gap-1.5 text-[12px] text-[#4A6080]">
-                    {{ paymentIcon(t.payment_method) }} {{ paymentLabel(t.payment_method) }}
-                  </span>
-                </td>
-                <td class="px-5 py-3.5 text-[12px] text-[#4A6080]">{{ formatDate(t.transaction_date) }}</td>
-                <td class="px-5 py-3.5 text-right">
-                  <span class="font-mono text-[13px] font-bold"
-                    :class="t.category?.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
-                    {{ t.category?.type === 'income' ? '+' : '−' }} R$ {{ fmt(Math.abs(Number(t.amount))) }}
-                  </span>
-                </td>
-                <td class="px-5 py-3.5">
-                  <div class="flex gap-1.5 justify-end">
-                    <button
-                      class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] hover:bg-[#4F8EF7]/10 transition-all text-[13px]"
-                      @click="openModal(t)"
-                    >✎</button>
-                    <button
-                      class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#FF3D6B] hover:text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-all text-[13px]"
-                      @click="openDeleteModal(t)"
-                    >✕</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <AppAlert
+        v-if="successMessage"
+        :message="successMessage"
+        variant="success"
+      />
 
-        <div class="flex items-center justify-between px-6 py-3.5 border-t border-[#1E2D45]">
-          <span class="text-[12px] text-[#4A6080]">
-            Mostrando {{ paginationFrom }}–{{ paginationTo }} de {{ filteredTransactions.length }}
-          </span>
-          <div class="flex gap-2">
-            <button
-              :disabled="currentPage === 1"
-              class="px-4 py-1.5 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-white text-[12px] font-semibold hover:bg-[#4F8EF7] hover:border-[#4F8EF7] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              @click="currentPage--"
-            >‹ Anterior</button>
-            <button
-              :disabled="currentPage === lastPage"
-              class="px-4 py-1.5 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-white text-[12px] font-semibold hover:bg-[#4F8EF7] hover:border-[#4F8EF7] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              @click="currentPage++"
-            >Próxima ›</button>
-          </div>
-        </div>
-      </div>
+      <TransactionsTable
+        title="Resultados"
+        :transactions="paginatedTransactions"
+        :current-page="currentPage"
+        :last-page="lastPage"
+        :total="filteredTransactions.length"
+        :loading="loading"
+        loading-label="Carregando..."
+        :error-message="tableLoadError"
+        error-action-label="Tentar novamente"
+        :empty-title="emptyTitle"
+        :empty-description="emptyDescription"
+        :empty-action-label="emptyActionLabel"
+        :show-filters="false"
+        show-payment-method
+        :total-label="`${filteredTransactions.length} encontradas`"
+        :pagination-label="paginationLabel"
+        @edit="openModal"
+        @delete="openDeleteModal"
+        @prev-page="goPrevPage"
+        @next-page="goNextPage"
+        @empty-action="emptyAction"
+        @error-action="loadData"
+      />
 
     </div>
 
@@ -226,13 +160,16 @@
       :isEditing="isEditing"
       :categories="categories"
       :initial="editingForm"
+      :saving="savingTransaction"
       @close="closeModal"
       @submit="submitTransaction"
     />
     <DeleteModal
       :isOpen="isDeleteModalOpen"
       :transactionName="deleteTarget?.description"
-      @close="isDeleteModalOpen = false"
+      :loading="deletingTransaction"
+      :error-message="deleteErrorMessage"
+      @close="closeDeleteModal"
       @confirm="confirmDelete"
     />
   </div>
@@ -240,11 +177,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import api from '@/services/api'
+import { categoryService } from '@/services/categoryService'
+import { transactionService } from '@/services/transactionService'
 import type { Transaction, Category, TransactionForm } from '@/types/finance'
+import { formatCurrency } from '@/utils/formatters'
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
+import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
+import TransactionsTable from '@/components/dashboard/TransactionsTable.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import DeleteModal from '@/components/modals/DeleteModal.vue'
+import AppAlert from '@/components/AppAlert.vue'
 
 const isMenuOpen = ref(false)
 const isModalOpen = ref(false)
@@ -254,6 +196,13 @@ const editingForm = ref<Partial<TransactionForm>>({})
 const isDeleteModalOpen = ref(false)
 const deleteTarget = ref<Transaction | null>(null)
 const loading = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
+const canRetryLoad = ref(false)
+const transactionsErrorMessage = ref('')
+const savingTransaction = ref(false)
+const deletingTransaction = ref(false)
+const deleteErrorMessage = ref('')
 const allTransactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
 const currentPage = ref(1)
@@ -294,9 +243,31 @@ const filteredTransactions = computed(() => {
 const lastPage        = computed(() => Math.max(1, Math.ceil(filteredTransactions.value.length / perPage)))
 const paginationFrom  = computed(() => filteredTransactions.value.length === 0 ? 0 : (currentPage.value - 1) * perPage + 1)
 const paginationTo    = computed(() => Math.min(currentPage.value * perPage, filteredTransactions.value.length))
+const paginationLabel = computed(() =>
+  `Mostrando ${paginationFrom.value}-${paginationTo.value} de ${filteredTransactions.value.length}`
+)
+const tableLoadError = computed(() =>
+  allTransactions.value.length === 0 ? transactionsErrorMessage.value : ''
+)
 const paginatedTransactions = computed(() => {
   return filteredTransactions.value.slice((currentPage.value - 1) * perPage, currentPage.value * perPage)
 })
+
+const emptyTitle = computed(() =>
+  allTransactions.value.length === 0
+    ? 'Nenhuma transação cadastrada'
+    : 'Nenhum resultado para os filtros'
+)
+
+const emptyDescription = computed(() =>
+  allTransactions.value.length === 0
+    ? 'Cadastre sua primeira transação para começar a acompanhar receitas e despesas.'
+    : 'Ajuste os filtros ou limpe a busca para ver outras transações.'
+)
+
+const emptyActionLabel = computed(() =>
+  allTransactions.value.length === 0 ? 'Criar primeira transação' : 'Limpar filtros'
+)
 
 const totalIncome  = computed(() => allTransactions.value.filter(t => t.category?.type === 'income').reduce((s, t) => s + Number(t.amount), 0))
 const totalExpense = computed(() => allTransactions.value.filter(t => t.category?.type === 'expense').reduce((s, t) => s + Number(t.amount), 0))
@@ -306,59 +277,141 @@ watch(filters, () => { currentPage.value = 1 }, { deep: true })
 
 const fetchAll = async () => {
   loading.value = true
+  errorMessage.value = ''
+  transactionsErrorMessage.value = ''
+  canRetryLoad.value = false
   try {
-    const { data } = await api.get('/transactions', {
-      params: {
-        per_page: 9999,
-        start_date: filters.value.dateFrom || '2000-01-01',
-        end_date:   filters.value.dateTo   || new Date().toISOString().slice(0, 10),
-      },
+    const response = await transactionService.list({
+      per_page: 9999,
+      start_date: filters.value.dateFrom || '2000-01-01',
+      end_date:   filters.value.dateTo   || new Date().toISOString().slice(0, 10),
     })
-    allTransactions.value = data.data
-  } catch (e) { console.error(e) }
-  finally { loading.value = false }
+    allTransactions.value = response.data
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as transações.'
+    transactionsErrorMessage.value = errorMessage.value
+    canRetryLoad.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 const fetchCategories = async () => {
-  try { const { data } = await api.get('/categories'); categories.value = data } catch (e) { console.error(e) }
+  try {
+    categories.value = await categoryService.list()
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as categorias.'
+    canRetryLoad.value = true
+  }
+}
+
+const loadData = async () => {
+  await fetchAll()
+  await fetchCategories()
 }
 
 const submitTransaction = async (form: TransactionForm) => {
+  errorMessage.value = ''
+  successMessage.value = ''
+  savingTransaction.value = true
   try {
-    if (isEditing.value) await api.put(`/transactions/${editingId.value}`, form)
-    else await api.post('/transactions', form)
+    const wasEditing = isEditing.value && editingId.value
+    if (wasEditing) await transactionService.update(editingId.value!, form)
+    else await transactionService.create(form)
     closeModal()
     await fetchAll()
-  } catch (e) { console.error(e) }
+    successMessage.value = wasEditing ? 'Transação atualizada com sucesso.' : 'Transação criada com sucesso.'
+  } catch {
+    errorMessage.value = 'Não foi possível salvar a transação.'
+    canRetryLoad.value = false
+  } finally {
+    savingTransaction.value = false
+  }
 }
 
 const confirmDelete = async () => {
   if (!deleteTarget.value) return
+  errorMessage.value = ''
+  deleteErrorMessage.value = ''
+  successMessage.value = ''
+  deletingTransaction.value = true
   try {
-    await api.delete(`/transactions/${deleteTarget.value.id}`)
-    isDeleteModalOpen.value = false
-    deleteTarget.value = null
+    await transactionService.remove(deleteTarget.value.id)
+    resetDeleteModal()
     await fetchAll()
-  } catch (e) { console.error(e) }
+    successMessage.value = 'Transação excluída com sucesso.'
+  } catch {
+    deleteErrorMessage.value = 'Não foi possível excluir a transação.'
+  } finally {
+    deletingTransaction.value = false
+  }
 }
 
 const openModal = (t?: Transaction) => {
   if (t) {
-    isEditing.value = true; editingId.value = t.id
-    editingForm.value = { category_id: t.category_id, description: t.description, amount: t.amount, transaction_date: t.transaction_date, payment_method: t.payment_method, is_recurring: t.is_recurring, recurrence_type: t.recurrence_type }
+    isEditing.value = true
+    editingId.value = t.id
+    editingForm.value = {
+      category_id: t.category_id,
+      description: t.description,
+      amount: t.amount,
+      transaction_date: t.transaction_date,
+      payment_method: t.payment_method,
+      is_recurring: t.is_recurring,
+      recurrence_type: t.recurrence_type,
+    }
   } else {
-    isEditing.value = false; editingId.value = null; editingForm.value = {}
+    isEditing.value = false
+    editingId.value = null
+    editingForm.value = {}
   }
   isModalOpen.value = true
 }
-const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
-const openDeleteModal  = (t: Transaction) => { deleteTarget.value = t; isDeleteModalOpen.value = true }
-const clearFilters = () => { filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' } }
 
-const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v)
-const formatDate  = (d: string) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-const paymentIcon = (m: string) => ({ pix: '⚡', credit_card: '💳', money: '💵', others: '◦' }[m] ?? '◦')
-const paymentLabel= (m: string) => ({ pix: 'Pix', credit_card: 'Crédito', money: 'Dinheiro', others: 'Outros' }[m] ?? m)
+const closeModal = () => {
+  isModalOpen.value = false
+  isEditing.value = false
+  editingId.value = null
+  editingForm.value = {}
+}
 
-onMounted(async () => { await fetchAll(); await fetchCategories() })
+const openDeleteModal = (t: Transaction) => {
+  deleteTarget.value = t
+  deleteErrorMessage.value = ''
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  if (deletingTransaction.value) return
+  resetDeleteModal()
+}
+
+const resetDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  deleteTarget.value = null
+  deleteErrorMessage.value = ''
+}
+
+const clearFilters = () => {
+  filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' }
+}
+
+const goPrevPage = () => {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+const goNextPage = () => {
+  if (currentPage.value < lastPage.value) currentPage.value++
+}
+
+const emptyAction = () => {
+  if (allTransactions.value.length === 0) openModal()
+  else clearFilters()
+}
+
+const fmt = formatCurrency
+
+onMounted(async () => {
+  await loadData()
+})
 </script>

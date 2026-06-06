@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory} from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
@@ -19,13 +19,15 @@ const routes: RouteRecordRaw[] = [
     component: DashboardView,
     meta: { requiresAuth: true },
   },
-  { path: '/under-construction',
-    component:UnderConstructionView,
-    meta: { requiresAuth: true }
+  {
+    path: '/under-construction',
+    component: UnderConstructionView,
+    meta: { requiresAuth: true },
   },
-  { path: '/categories',
-    component:CategoriesView,
-    meta: { requiresAuth: true }
+  {
+    path: '/categories',
+    component: CategoriesView,
+    meta: { requiresAuth: true },
   },
   { path: '/ai',
     component:AiView,
@@ -40,8 +42,7 @@ const routes: RouteRecordRaw[] = [
     path: '/profile',
     component: ProfileView,
     meta: { requiresAuth: true },
-  }
-
+  },
 ]
 
 const router = createRouter({

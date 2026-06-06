@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Http\Repositories\CategoryRepository;
 use App\Http\Repositories\TransactionRepository;
 use App\Http\Repositories\UserRepository;
+use App\Http\Resources\TransactionResource;
 
 class TransactionService extends BaseService
 {
@@ -22,19 +23,7 @@ class TransactionService extends BaseService
     {
         $transactions = $this->transactionRepository->getAllWithCategory($perPage);
 
-        // TODO: Criar Resource
-        $transactions->getCollection()->transform(function ($t) {
-            return [
-                'title' => $t->description,
-                'date' => $t->transaction_date,
-                'amount' => (float) $t->amount,
-                'method' => $t->payment_method,
-                'category' => $t->category->name,
-                'type' => $t->category->type,
-            ];
-        });
-
-        return $transactions;
+        return $this->formatPaginatedTransactions($transactions);
     }
 
     public function store(array $data)
@@ -53,12 +42,28 @@ class TransactionService extends BaseService
 
         unset($data['category']);
 
-        return $this->transactionRepository->store($data);
+        return new TransactionResource($this->transactionRepository->store($data)->load('category'));
     }
 
     public function get(int $perPage, string $startDate, string $endDate)
     {
-        return $this->transactionRepository->getAllWithCategory($perPage, $startDate, $endDate);
+        $transactions = $this->transactionRepository->getAllWithCategory($perPage, $startDate, $endDate);
+
+        return $this->formatPaginatedTransactions($transactions);
+    }
+
+    public function update(array $data, string $id)
+    {
+        return new TransactionResource($this->transactionRepository->update($data, $id)->load('category'));
+    }
+
+    private function formatPaginatedTransactions($transactions)
+    {
+        $transactions->getCollection()->transform(
+            fn ($transaction) => (new TransactionResource($transaction))->resolve()
+        );
+
+        return $transactions;
     }
 
 }

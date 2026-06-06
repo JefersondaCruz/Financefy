@@ -7,7 +7,21 @@
       </span>
     </div>
 
-    <div class="flex gap-6 items-center">
+    <div v-if="errorMessage" class="flex h-[180px] flex-col items-center justify-center gap-2 text-center">
+      <p class="text-sm font-semibold text-white">{{ errorTitle }}</p>
+      <p class="max-w-[260px] text-[12px] text-[#4A6080]">{{ errorMessage }}</p>
+    </div>
+
+    <div v-else-if="loading" class="flex h-[180px] items-center justify-center text-sm text-[#4A6080]">
+      {{ loadingLabel }}
+    </div>
+
+    <div v-else-if="categoryData.length === 0" class="flex h-[180px] flex-col items-center justify-center gap-2 text-center">
+      <p class="text-sm font-semibold text-white">{{ emptyTitle }}</p>
+      <p class="max-w-[260px] text-[12px] text-[#4A6080]">{{ emptyDescription }}</p>
+    </div>
+
+    <div v-else class="flex gap-6 items-center">
       <div class="relative w-[160px] h-[160px] shrink-0">
         <canvas ref="canvasRef" />
         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -29,11 +43,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Transaction } from '@/types/finance'
+import { formatCurrency } from '@/utils/formatters'
 
-const props = defineProps<{ transactions: Transaction[] }>()
+const props = withDefaults(defineProps<{
+  transactions: Transaction[]
+  loading?: boolean
+  loadingLabel?: string
+  errorMessage?: string
+  errorTitle?: string
+  emptyTitle?: string
+  emptyDescription?: string
+}>(), {
+  loading: false,
+  loadingLabel: 'Carregando gráfico...',
+  errorMessage: '',
+  errorTitle: 'Não foi possível carregar o gráfico',
+  emptyTitle: 'Sem dados de despesas',
+  emptyDescription: 'Cadastre despesas no período para visualizar a distribuição por categoria.',
+})
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let chart: Chart | null = null
@@ -54,14 +84,12 @@ const categoryData = computed(() => {
       name, value,
       color: COLORS[i % COLORS.length],
       pct: total ? ((value / total) * 100).toFixed(1) : '0',
-      formatted: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(value),
+      formatted: formatCurrency(value),
     }))
 })
 
 const totalFormatted = computed(() =>
-  new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(
-    categoryData.value.reduce((s, c) => s + c.value, 0)
-  )
+  formatCurrency(categoryData.value.reduce((s, c) => s + c.value, 0))
 )
 
 const renderChart = () => {
@@ -92,14 +120,17 @@ const renderChart = () => {
           borderColor: '#1E2D45',
           borderWidth: 1,
           padding: 10,
-          callbacks: { label: (c) => `  R$ ${Number(c.parsed).toFixed(2)}` },
+          callbacks: { label: (c) => `  R$ ${formatCurrency(Number(c.parsed))}` },
         },
       },
     },
   })
 }
 
-watch(() => props.transactions, renderChart, { deep: true })
+watch([() => props.transactions, () => props.loading], async () => {
+  await nextTick()
+  renderChart()
+}, { deep: true })
 onMounted(renderChart)
 onBeforeUnmount(() => chart?.destroy())
 </script>

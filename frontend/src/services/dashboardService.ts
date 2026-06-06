@@ -9,23 +9,28 @@ interface TransactionParams {
 }
 
 export const dashboardService = {
-  getTransactions(params: TransactionParams) {
-    return api.get<PaginatedResponse<Transaction>>('/transactions', { params })
+  async getTransactions(params: TransactionParams) {
+    const response = await api.get<PaginatedResponse<Transaction>>('/transactions', { params })
+    return response.data
   },
 
-  getCategories() {
-    return api.get<Category[]>('/categories')
+  async getCategories() {
+    const response = await api.get<Category[]>('/categories')
+    return response.data
   },
 
-  createTransaction(form: TransactionForm) {
-    return api.post<Transaction>('/transactions', form)
+  async createTransaction(form: TransactionForm) {
+    const response = await api.post<Transaction>('/transactions', form)
+    return response.data
   },
 
-  updateTransaction(id: number, form: TransactionForm) {
-    return api.put<Transaction>(`/transactions/${id}`, form)
+  async updateTransaction(id: number, form: TransactionForm) {
+    const response = await api.put<Transaction>(`/transactions/${id}`, form)
+    return response.data
   },
 
-  deleteTransaction(id: number) {
-    return api.delete(`/transactions/${id}`)
+  async deleteTransaction(id: number) {
+    const response = await api.delete(`/transactions/${id}`)
+    return response.data
   },
 }

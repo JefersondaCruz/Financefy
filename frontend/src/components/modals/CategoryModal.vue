@@ -8,7 +8,7 @@
     <div
       v-if="isOpen"
       class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[2000] p-4"
-      @click="$emit('close')"
+      @click="close"
     >
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl w-full max-w-[420px] shadow-2xl" @click.stop>
 
@@ -21,11 +21,12 @@
           </div>
           <button
             class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.06] text-[#4A6080] text-xs hover:bg-[#FF3D6B]/15 hover:text-[#FF3D6B] transition-all"
-            @click="$emit('close')"
+            :disabled="saving"
+            @click="close"
           >✕</button>
         </div>
 
-        <form class="p-6 flex flex-col gap-4" @submit.prevent="$emit('submit', form)">
+        <form class="p-6 flex flex-col gap-4" @submit.prevent="submit">
 
           <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080]">Nome da Categoria</label>
@@ -80,13 +81,15 @@
           <div class="flex gap-3 mt-1">
             <button
               type="button"
+              :disabled="saving"
               class="flex-1 py-3 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-[#4A6080] text-[13px] font-bold hover:bg-[#FF3D6B]/10 hover:text-[#FF3D6B] hover:border-[#FF3D6B] transition-all"
-              @click="$emit('close')"
+              @click="close"
             >Cancelar</button>
             <button
               type="submit"
-              class="flex-1 py-3 rounded-xl bg-[#4F8EF7] text-white text-[13px] font-bold hover:bg-[#3a7de0] transition-colors"
-            >{{ isEditing ? 'Salvar alterações' : 'Criar categoria' }}</button>
+              :disabled="saving"
+              class="flex-1 py-3 rounded-xl bg-[#4F8EF7] text-white text-[13px] font-bold hover:bg-[#3a7de0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >{{ saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Criar categoria' }}</button>
           </div>
 
         </form>
@@ -97,25 +100,30 @@
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-
-interface CategoryForm {
-  name: string
-  type: 'income' | 'expense'
-}
+import type { CategoryForm } from '@/types/finance'
 
 const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
   initial?: Partial<CategoryForm>
+  saving?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'close'): void
   (e: 'submit', f: CategoryForm): void
 }>()
 
 const defaultForm = (): CategoryForm => ({ name: '', type: 'expense' })
 const form = reactive<CategoryForm>(defaultForm())
+
+const close = () => {
+  if (!props.saving) emit('close')
+}
+
+const submit = () => {
+  if (!props.saving) emit('submit', form)
+}
 
 watch(() => props.isOpen, (open) => {
   if (open && props.initial) Object.assign(form, props.initial)
