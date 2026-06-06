@@ -5,14 +5,13 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\CategoryController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\WebhookController;
 
 Route::group(['prefix'=> 'auth'], function () {
     Route::post('/login', [AuthController::class,'login']);
     Route::post('/register', [AuthController::class,'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
-
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'get']);
@@ -27,7 +26,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/ai/conversation', [AiController::class, 'clear']);
 });
 
-Route::group(['prefix'=> 'chatbot'], function () {
+Route::group(['prefix' => 'chatbot', 'middleware' => 'resolve.chatbot.user'], function () {
+    Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/transactions', [TransactionController::class, 'get']);
     Route::post('/transactions', [TransactionController::class, 'store']);
+});
+
+Route::group(['prefix' => 'webhook'], function () {
+    Route::get('/waba',  [WebhookController::class, 'verify']);
+    Route::post('/waba', [WebhookController::class, 'handle']);
 });

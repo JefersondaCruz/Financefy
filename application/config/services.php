@@ -37,5 +37,11 @@ return [
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
     ],
+    'waba' => [
+        'verify_token' => env('WABA_VERIFY_TOKEN'),
+        'access_token' => env('WABA_ACCESS_TOKEN'),
+        'phone_number_id' => env('WABA_PHONE_NUMBER_ID'),
+        'api_url' => env('WABA_API_URL', 'https://graph.facebook.com/v23.0'),
+    ],
 
 ];
