@@ -1,5 +1,5 @@
 import api from './api'
-import type { Transaction, Category, PaginatedResponse, TransactionForm } from '@/types/finance'
+import type { Transaction, Category, PaginatedResponse, TransactionForm, TransactionSummary } from '@/types/finance'
 
 interface TransactionParams {
   page: number
@@ -11,6 +11,11 @@ interface TransactionParams {
 export const dashboardService = {
   async getTransactions(params: TransactionParams) {
     const response = await api.get<PaginatedResponse<Transaction>>('/transactions', { params })
+    return response.data
+  },
+
+  async getTransactionSummary(params: Pick<TransactionParams, 'start_date' | 'end_date'>) {
+    const response = await api.get<TransactionSummary>('/transactions/summary', { params })
     return response.data
   },
 

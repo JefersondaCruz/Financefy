@@ -1,15 +1,18 @@
 <template>
-  <div class="min-h-screen bg-[#07090F] text-white flex">
+  <div class="min-h-screen bg-[#07090F] text-white">
 
     <AppSidebar :isOpen="isMenuOpen" activeItem="Perfil" @close="isMenuOpen = false" />
 
-    <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0 max-w-[800px]">
+    <div class="flex w-full flex-col items-center gap-6 px-4 py-6 sm:px-6 md:px-8">
+      <div class="w-full">
+        <AppPageHeader
+          title="Perfil"
+          subtitle="Gerencie suas informações pessoais"
+          @open-menu="isMenuOpen = true"
+        />
+      </div>
 
-      <AppPageHeader
-        title="Perfil"
-        subtitle="Gerencie suas informações pessoais"
-        @open-menu="isMenuOpen = true"
-      />
+      <div class="w-full max-w-[920px] flex flex-col gap-6">
 
       <AppAlert
         v-if="errorMessage"
@@ -23,21 +26,15 @@
         Carregando perfil...
       </div>
 
-      <p
-        v-if="errorMessage"
-        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
-      >
-        {{ errorMessage }}
-      </p>
-
-      <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-6 flex items-center gap-5">
+      <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-5">
         <div class="w-16 h-16 rounded-2xl bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 flex items-center justify-center text-2xl font-bold text-[#4F8EF7] shrink-0">
           {{ initials }}
         </div>
-        <div>
+        <div class="min-w-0">
           <h2 class="text-lg font-bold text-white">{{ profileForm.name || 'Seu nome' }}</h2>
-          <p class="text-[13px] text-[#4A6080]">{{ profileForm.email }}</p>
-          <p class="text-[11px] text-[#4A6080] mt-1">Membro desde {{ memberSince }}</p>
+          <p class="text-[13px] text-[#4A6080] break-all">{{ profileForm.email || 'email@exemplo.com' }}</p>
+          <p class="text-[12px] text-[#4A6080] mt-0.5">{{ displayPhone || 'Telefone nao informado' }}</p>
+          <p v-if="memberSince" class="text-[11px] text-[#4A6080] mt-1">Membro desde {{ memberSince }}</p>
         </div>
       </div>
 
@@ -64,6 +61,18 @@
                 required
                 class="bg-white/[0.04] border border-[#1E2D45] text-white text-[13px] px-3 py-2.5 rounded-xl outline-none focus:border-[#4F8EF7] transition-colors"
               />
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080]">Telefone</label>
+              <input
+                v-model="profileForm.phone"
+                type="tel"
+                inputmode="tel"
+                placeholder="(00) 00000-0000"
+                disabled
+                class="bg-white/[0.025] border border-[#1E2D45] text-[#4A6080] text-[13px] placeholder-[#4A6080] px-3 py-2.5 rounded-xl outline-none cursor-not-allowed"
+              />
+              <p class="text-[11px] text-[#4A6080]">Telefone vinculado ao chatbot. Para alterar, entre em contato com o suporte.</p>
             </div>
           </div>
 
@@ -198,6 +207,7 @@
         </div>
       </Transition>
 
+      </div>
     </div>
   </div>
 </template>
@@ -223,7 +233,7 @@ const deleteAccountError = ref('')
 const deletingAccount = ref(false)
 const errorMessage = ref('')
 
-const profileForm = ref({ name: '', email: '', created_at: '' })
+const profileForm = ref({ id: 0, name: '', email: '', phone: '', created_at: '' })
 const passwordForm = ref({ current_password: '', password: '', password_confirmation: '' })
 
 interface Msg {
@@ -242,6 +252,16 @@ const memberSince = computed(() =>
     ? formatDate(profileForm.value.created_at, { month: 'long', year: 'numeric' })
     : ''
 )
+
+const applyPhoneMask = (value: string) => {
+  value = value.replace(/\D/g, '')
+  if (value.length <= 2) return value ? `(${value}` : ''
+  if (value.length <= 6) return `(${value.slice(0, 2)}) ${value.slice(2)}`
+  if (value.length <= 10) return `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`
+  return `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`
+}
+
+const displayPhone = computed(() => applyPhoneMask(profileForm.value.phone))
 
 const passwordStrength = computed(() => {
   const p = passwordForm.value.password
@@ -266,9 +286,13 @@ const fetchProfile = async () => {
   loadingProfile.value = true
   errorMessage.value = ''
   try {
+    const profile = await userService.getProfile()
     profileForm.value = {
-      created_at: '',
-      ...await userService.getProfile(),
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      phone: applyPhoneMask(profile.phone || ''),
+      created_at: profile.created_at || '',
     }
   } catch {
     errorMessage.value = 'Não foi possível carregar o perfil.'
@@ -282,7 +306,21 @@ const saveProfile = async () => {
   profileMsg.value = null
   errorMessage.value = ''
   try {
-    await userService.updateProfile({ name: profileForm.value.name, email: profileForm.value.email })
+    const updatedProfile = await userService.updateProfile({
+      name: profileForm.value.name,
+      email: profileForm.value.email,
+    })
+    profileForm.value = {
+      ...profileForm.value,
+      ...updatedProfile,
+      phone: applyPhoneMask(updatedProfile.phone || ''),
+    }
+    auth.setUser({
+      id: updatedProfile.id,
+      name: updatedProfile.name,
+      email: updatedProfile.email,
+      phone: updatedProfile.phone,
+    })
     profileMsg.value = { type: 'success', text: 'Perfil atualizado com sucesso.' }
     setTimeout(() => { profileMsg.value = null }, 3000)
   } catch {

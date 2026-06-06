@@ -40,6 +40,21 @@ export interface TransactionForm {
   recurrence_type: string | null
 }
 
+export interface CategoryRankingItem {
+  name: string
+  total: number
+}
+
+export interface TransactionSummary {
+  transaction_count: number
+  total_income: number
+  total_expenses: number
+  net_balance: number
+  monthly_average: number
+  recurring_count: number
+  category_ranking: CategoryRankingItem[]
+}
+
 export interface Goal {
   id: number
   name: string

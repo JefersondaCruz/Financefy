@@ -53,6 +53,61 @@
         <KpiCard label="Saldo Líquido"   icon="💰" :value="netBalance"    :trend="netBalance >= 0 ? 5 : -5" variant="balance" />
       </section>
 
+      <section class="grid grid-cols-1 xl:grid-cols-[1fr_1.1fr] gap-5">
+        <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 class="text-sm font-bold text-white">Resumo mensal</h4>
+              <p class="text-[12px] text-[#4A6080]">{{ selectedPeriodLabel }}</p>
+            </div>
+            <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-[#4F8EF7]/12 text-[#4F8EF7]">
+              {{ summary.transaction_count }} transações
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="rounded-xl border border-[#1E2D45] bg-white/[0.03] p-3">
+              <p class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080] mb-1">Receitas</p>
+              <p class="font-mono text-[15px] font-bold text-[#00E5A0]">R$ {{ fmt(totalIncome) }}</p>
+            </div>
+            <div class="rounded-xl border border-[#1E2D45] bg-white/[0.03] p-3">
+              <p class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080] mb-1">Despesas</p>
+              <p class="font-mono text-[15px] font-bold text-[#FF3D6B]">R$ {{ fmt(totalExpenses) }}</p>
+            </div>
+            <div class="rounded-xl border border-[#1E2D45] bg-white/[0.03] p-3">
+              <p class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080] mb-1">Ticket médio</p>
+              <p class="font-mono text-[15px] font-bold text-white">R$ {{ fmt(monthlyAverage) }}</p>
+            </div>
+            <div class="rounded-xl border border-[#1E2D45] bg-white/[0.03] p-3">
+              <p class="text-[10px] font-bold tracking-widest uppercase text-[#4A6080] mb-1">Recorrentes</p>
+              <p class="font-mono text-[15px] font-bold text-[#4F8EF7]">{{ recurringMonthlyCount }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 class="text-sm font-bold text-white">Ranking de categorias</h4>
+              <p class="text-[12px] text-[#4A6080]">Despesas do mês por categoria</p>
+            </div>
+          </div>
+
+          <div v-if="categoryRanking.length === 0" class="py-8 text-center text-[13px] text-[#4A6080]">
+            Nenhuma despesa no período.
+          </div>
+          <div v-else class="flex flex-col gap-3">
+            <div v-for="item in categoryRanking" :key="item.name" class="flex items-center gap-3">
+              <div class="w-28 truncate text-[12px] font-semibold text-[#E8EEFF]">{{ item.name }}</div>
+              <div class="h-2 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
+                <div class="h-full rounded-full bg-[#FF3D6B]" :style="{ width: `${item.percent}%` }" />
+              </div>
+              <div class="w-24 text-right font-mono text-[12px] font-bold text-[#FF3D6B]">R$ {{ fmt(item.total) }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-5">
         <CategoryChart
           :transactions="transactions"
@@ -123,6 +178,7 @@
         :empty-description="transactionsEmptyDescription"
         :empty-action-label="transactionsEmptyActionLabel"
         @edit="openEditModal"
+        @duplicate="duplicateTransaction"
         @delete="openDeleteModal"
         @next-page="nextPage"
         @prev-page="prevPage"
@@ -160,7 +216,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { dashboardService } from '@/services/dashboardService'
 
-import type { Transaction, Category, TransactionForm, DateFilter } from '@/types/finance'
+import type { Transaction, Category, TransactionForm, DateFilter, TransactionSummary } from '@/types/finance'
+import { formatCurrency } from '@/utils/formatters'
 
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
@@ -190,7 +247,18 @@ const deletingTransaction = ref(false)
 const deleteErrorMessage = ref('')
 const transactionsErrorMessage = ref('')
 
+const emptySummary = (): TransactionSummary => ({
+  transaction_count: 0,
+  total_income: 0,
+  total_expenses: 0,
+  net_balance: 0,
+  monthly_average: 0,
+  recurring_count: 0,
+  category_ranking: [],
+})
+
 const transactions = ref<Transaction[]>([])
+const summary = ref<TransactionSummary>(emptySummary())
 const categories = ref<Category[]>([])
 const currentPage = ref(1)
 const lastPage = ref(1)
@@ -204,17 +272,23 @@ const dateFilter = ref<DateFilter>({
   start_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
   end_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
 })
-const totalExpenses = computed(() =>
-  transactions.value
-    .filter(t => t.category?.type === 'expense')
-    .reduce((s, t) => s + Number(t.amount), 0)
+const totalExpenses = computed(() => summary.value.total_expenses)
+const totalIncome = computed(() => summary.value.total_income)
+const netBalance = computed(() => summary.value.net_balance)
+const monthlyAverage = computed(() => summary.value.monthly_average)
+const recurringMonthlyCount = computed(() => summary.value.recurring_count)
+const selectedPeriodLabel = computed(() =>
+  `${formatDateLabel(dateFilter.value.start_date)} a ${formatDateLabel(dateFilter.value.end_date)}`
 )
-const totalIncome = computed(() =>
-  transactions.value
-    .filter(t => t.category?.type === 'income')
-    .reduce((s, t) => s + Number(t.amount), 0)
-)
-const netBalance = computed(() => totalIncome.value - totalExpenses.value)
+const categoryRanking = computed(() => {
+  const highest = Math.max(...summary.value.category_ranking.map(item => item.total), 0)
+  return summary.value.category_ranking.map(({ name, total }) => ({
+      name,
+      total,
+      percent: highest > 0 ? Math.max(6, Math.round((total / highest) * 100)) : 0,
+    })
+  )
+})
 
 const iaChips = [
   '"Onde estou gastando mais?"',
@@ -285,6 +359,18 @@ const fetchTransactions = async (page = 1) => {
   }
 }
 
+const fetchTransactionSummary = async () => {
+  try {
+    summary.value = await dashboardService.getTransactionSummary({
+      start_date: dateFilter.value.start_date,
+      end_date: dateFilter.value.end_date,
+    })
+  } catch {
+    errorMessage.value = 'Não foi possível carregar o resumo mensal.'
+    canRetryLoad.value = true
+  }
+}
+
 const fetchCategories = async () => {
   loadingCategories.value = true
   try {
@@ -299,7 +385,7 @@ const fetchCategories = async () => {
 
 const loadData = async () => {
   successMessage.value = ''
-  await Promise.all([fetchTransactions(currentPage.value), fetchCategories()])
+  await Promise.all([fetchTransactions(currentPage.value), fetchTransactionSummary(), fetchCategories()])
 }
 
 const createTransaction = async (form: TransactionForm) => {
@@ -309,7 +395,7 @@ const createTransaction = async (form: TransactionForm) => {
   try {
     await dashboardService.createTransaction(form)
     closeModal()
-    await fetchTransactions()
+    await Promise.all([fetchTransactions(), fetchTransactionSummary()])
     successMessage.value = 'Transação criada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível criar a transação.'
@@ -327,7 +413,7 @@ const updateTransaction = async (form: TransactionForm) => {
   try {
     await dashboardService.updateTransaction(editingId.value, form)
     closeModal()
-    await fetchTransactions(currentPage.value)
+    await Promise.all([fetchTransactions(currentPage.value), fetchTransactionSummary()])
     successMessage.value = 'Transação atualizada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível atualizar a transação.'
@@ -346,7 +432,7 @@ const confirmDelete = async () => {
   try {
     await dashboardService.deleteTransaction(deleteTarget.value.id)
     resetDeleteModal()
-    await fetchTransactions(currentPage.value)
+    await Promise.all([fetchTransactions(currentPage.value), fetchTransactionSummary()])
     successMessage.value = 'Transação excluída com sucesso.'
   } catch {
     deleteErrorMessage.value = 'Não foi possível excluir a transação.'
@@ -370,6 +456,21 @@ const openEditModal = (t: Transaction) => {
   editingForm.value = {
     category_id: t.category_id,
     description: t.description,
+    amount: t.amount,
+    transaction_date: t.transaction_date,
+    payment_method: t.payment_method,
+    is_recurring: t.is_recurring ?? false,
+    recurrence_type: t.recurrence_type ?? null,
+  }
+  isModalOpen.value = true
+}
+
+const duplicateTransaction = (t: Transaction) => {
+  isEditing.value = false
+  editingId.value = null
+  editingForm.value = {
+    category_id: t.category_id,
+    description: `Cópia de ${t.description}`,
     amount: t.amount,
     transaction_date: t.transaction_date,
     payment_method: t.payment_method,
@@ -405,10 +506,22 @@ const resetDeleteModal = () => {
 
 const onDateChange = (df: DateFilter) => {
   dateFilter.value = df
-  fetchTransactions(1)
+  Promise.all([fetchTransactions(1), fetchTransactionSummary()])
 }
-const nextPage = () => fetchTransactions(currentPage.value + 1)
-const prevPage = () => fetchTransactions(currentPage.value - 1)
+const nextPage = () => {
+  if (currentPage.value < lastPage.value) fetchTransactions(currentPage.value + 1)
+}
+const prevPage = () => {
+  if (currentPage.value > 1) fetchTransactions(currentPage.value - 1)
+}
+
+const formatDateLabel = (value: string) =>
+  new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  })
+
+const fmt = formatCurrency
 
 const onTransactionsEmptyAction = () => {
   if (hasTableFilters.value) {
@@ -420,6 +533,6 @@ const onTransactionsEmptyAction = () => {
 }
 
 onMounted(async () => {
-  await loadData()
+  await fetchCategories()
 })
 </script>

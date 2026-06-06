@@ -1,16 +1,34 @@
 import api from './api'
-import type { PaginatedResponse, Transaction, TransactionForm } from '@/types/finance'
+import type { PaginatedResponse, Transaction, TransactionForm, TransactionSummary } from '@/types/finance'
 
 export interface TransactionParams {
   page?: number
   per_page?: number
   start_date: string
   end_date: string
+  search?: string
+  type?: string
+  category_id?: number
+  payment_method?: string
+  recurring?: string
 }
 
 export const transactionService = {
   async list(params: TransactionParams) {
     const response = await api.get<PaginatedResponse<Transaction>>('/transactions', { params })
+    return response.data
+  },
+
+  async summary(params: TransactionParams) {
+    const response = await api.get<TransactionSummary>('/transactions/summary', { params })
+    return response.data
+  },
+
+  async exportCsv(params: TransactionParams) {
+    const response = await api.get<Blob>('/transactions/export', {
+      params,
+      responseType: 'blob',
+    })
     return response.data
   },
 
