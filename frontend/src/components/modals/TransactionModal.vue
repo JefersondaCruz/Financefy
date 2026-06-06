@@ -17,7 +17,8 @@
           </div>
           <button
             class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.06] text-[#4A6080] text-xs hover:bg-[#FF3D6B]/15 hover:text-[#FF3D6B] transition-all"
-            @click="$emit('close')"
+            :disabled="saving"
+            @click="close"
           >✕</button>
         </div>
 
@@ -192,14 +193,16 @@
           <div class="flex gap-3 mt-1">
             <button
               type="button"
+              :disabled="saving"
               class="flex-1 py-3 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-[#4A6080] text-[13px] font-bold hover:bg-[#FF3D6B]/10 hover:text-[#FF3D6B] hover:border-[#FF3D6B] transition-all"
-              @click="$emit('close')"
+              @click="close"
             >Cancelar</button>
             <button
               type="button"
+              :disabled="saving"
               @click="handleSubmit"
-              class="flex-1 py-3 rounded-xl bg-[#4F8EF7] text-white text-[13px] font-bold hover:bg-[#3a7de0] transition-colors"
-            >{{ isEditing ? 'Salvar alterações' : 'Adicionar transação' }}</button>
+              class="flex-1 py-3 rounded-xl bg-[#4F8EF7] text-white text-[13px] font-bold hover:bg-[#3a7de0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >{{ saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Adicionar transação' }}</button>
           </div>
 
         </div>
@@ -218,6 +221,7 @@ const props = defineProps<{
   isEditing: boolean
   categories: Category[]
   initial?: Partial<TransactionForm>
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -345,11 +349,17 @@ watch(() => props.isOpen, (open) => {
 })
 
 function handleSubmit() {
+  if (props.saving) return
   if (!validate()) return
   emit('submit', { ...form, amount: amountCents.value / 100 })
 }
 
+function close() {
+  if (!props.saving) emit('close')
+}
+
 function onBackdropClick() {
+  if (props.saving) return
   categoryOpen.value = false
   emit('close')
 }

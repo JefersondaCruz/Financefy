@@ -13,19 +13,45 @@
         </span>
       </div>
     </div>
-    <div class="h-[240px] relative">
+    <div v-if="errorMessage" class="flex h-[240px] flex-col items-center justify-center gap-2 text-center">
+      <p class="text-sm font-semibold text-white">{{ errorTitle }}</p>
+      <p class="max-w-[280px] text-[12px] text-[#4A6080]">{{ errorMessage }}</p>
+    </div>
+    <div v-else-if="loading" class="flex h-[240px] items-center justify-center text-sm text-[#4A6080]">
+      {{ loadingLabel }}
+    </div>
+    <div v-else-if="!hasData" class="flex h-[240px] flex-col items-center justify-center gap-2 text-center">
+      <p class="text-sm font-semibold text-white">{{ emptyTitle }}</p>
+      <p class="max-w-[280px] text-[12px] text-[#4A6080]">{{ emptyDescription }}</p>
+    </div>
+    <div v-else class="h-[240px] relative">
       <canvas ref="canvasRef" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Transaction } from '@/types/finance'
 import { formatCurrency } from '@/utils/formatters'
 
-const props = defineProps<{ transactions: Transaction[] }>()
+const props = withDefaults(defineProps<{
+  transactions: Transaction[]
+  loading?: boolean
+  loadingLabel?: string
+  errorMessage?: string
+  errorTitle?: string
+  emptyTitle?: string
+  emptyDescription?: string
+}>(), {
+  loading: false,
+  loadingLabel: 'Carregando gráfico...',
+  errorMessage: '',
+  errorTitle: 'Não foi possível carregar o gráfico',
+  emptyTitle: 'Sem dados para o fluxo',
+  emptyDescription: 'Cadastre transações no período para visualizar receitas e despesas no gráfico.',
+})
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let chart: Chart | null = null
@@ -54,10 +80,15 @@ const chartData = computed(() => {
   }
 })
 
+const hasData = computed(() =>
+  chartData.value.incomes.some(v => v > 0) || chartData.value.expenses.some(v => v > 0)
+)
+
 const renderChart = () => {
   if (!canvasRef.value) return
   chart?.destroy()
   const { labels, incomes, expenses } = chartData.value
+  if (!hasData.value) return
   chart = new Chart(canvasRef.value, {
     type: 'line',
     data: {
@@ -121,7 +152,10 @@ const renderChart = () => {
   })
 }
 
-watch(() => props.transactions, renderChart, { deep: true })
+watch([() => props.transactions, () => props.loading], async () => {
+  await nextTick()
+  renderChart()
+}, { deep: true })
 onMounted(renderChart)
 onBeforeUnmount(() => chart?.destroy())
 </script>

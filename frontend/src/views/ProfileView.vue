@@ -5,17 +5,23 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0 max-w-[800px]">
 
-      <header class="flex items-center gap-4">
-        <button class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors" @click="isMenuOpen = true">
-          <span class="block w-4 h-[1.5px] bg-white rounded" />
-          <span class="block w-4 h-[1.5px] bg-white rounded" />
-          <span class="block w-4 h-[1.5px] bg-white rounded" />
-        </button>
-        <div>
-          <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">Perfil</h1>
-          <p class="text-[12px] text-[#4A6080] mt-0.5">Gerencie suas informações pessoais</p>
-        </div>
-      </header>
+      <AppPageHeader
+        title="Perfil"
+        subtitle="Gerencie suas informações pessoais"
+        @open-menu="isMenuOpen = true"
+      />
+
+      <AppAlert
+        v-if="errorMessage"
+        :message="errorMessage"
+        variant="error"
+        action-label="Tentar novamente"
+        @action="fetchProfile"
+      />
+
+      <div v-if="loadingProfile" class="rounded-2xl border border-[#1E2D45] bg-[#0D1526] p-6 text-sm text-[#4A6080]">
+        Carregando perfil...
+      </div>
 
       <p
         v-if="errorMessage"
@@ -62,9 +68,11 @@
           </div>
 
           <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
-            <p v-if="profileMsg" class="text-[12px] font-semibold" :class="profileMsg.type === 'success' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
-              {{ profileMsg.text }}
-            </p>
+            <AppAlert
+              v-if="profileMsg"
+              :message="profileMsg.text"
+              :variant="profileMsg.type"
+            />
           </Transition>
 
           <div class="flex justify-end">
@@ -123,9 +131,11 @@
           </div>
 
           <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
-            <p v-if="passwordMsg" class="text-[12px] font-semibold" :class="passwordMsg.type === 'success' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'">
-              {{ passwordMsg.text }}
-            </p>
+            <AppAlert
+              v-if="passwordMsg"
+              :message="passwordMsg.text"
+              :variant="passwordMsg.type"
+            />
           </Transition>
 
           <div class="flex justify-end">
@@ -149,13 +159,13 @@
           </div>
           <button
             class="px-5 py-2.5 rounded-xl border border-[#FF3D6B]/40 text-[#FF3D6B] text-[13px] font-bold hover:bg-[#FF3D6B]/10 transition-all"
-            @click="showDeleteAccount = true"
+            @click="openDeleteAccount"
           >Excluir conta</button>
         </div>
       </div>
 
       <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
-        <div v-if="showDeleteAccount" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" @click="showDeleteAccount = false">
+        <div v-if="showDeleteAccount" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" @click="closeDeleteAccount">
           <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-8 w-full max-w-[380px] text-center shadow-2xl" @click.stop>
             <div class="w-14 h-14 rounded-full bg-[#FF3D6B]/10 border border-[#FF3D6B]/20 flex items-center justify-center text-2xl mx-auto mb-5">⚠</div>
             <h3 class="text-lg font-bold text-white mb-2">Excluir sua conta?</h3>
@@ -163,18 +173,26 @@
             <div class="flex flex-col gap-2 mb-4">
               <label class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] text-left">Digite sua senha para confirmar</label>
               <input v-model="deleteAccountPassword" type="password" placeholder="Sua senha"
+                :disabled="deletingAccount"
                 class="bg-white/[0.04] border border-[#1E2D45] text-white text-[13px] placeholder-[#4A6080] px-3 py-2.5 rounded-xl outline-none focus:border-[#FF3D6B] transition-colors" />
             </div>
-            <p v-if="errorMessage" class="mb-4 text-left text-[12px] font-semibold text-[#FF3D6B]">
-              {{ errorMessage }}
-            </p>
+            <AppAlert
+              v-if="deleteAccountError"
+              class="mb-4 text-left"
+              :message="deleteAccountError"
+              variant="error"
+            />
             <div class="flex gap-3">
-              <button class="flex-1 py-3 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-[#4A6080] text-[13px] font-bold hover:bg-white/10 hover:text-white transition-all" @click="showDeleteAccount = false">Cancelar</button>
               <button
-                :disabled="!deleteAccountPassword"
-                class="flex-1 py-3 rounded-xl bg-[#FF3D6B] text-white text-[13px] font-bold hover:bg-[#e02050] disabled:opacity-50 transition-colors"
+                :disabled="deletingAccount"
+                class="flex-1 py-3 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-[#4A6080] text-[13px] font-bold hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all"
+                @click="closeDeleteAccount"
+              >Cancelar</button>
+              <button
+                :disabled="deletingAccount || !deleteAccountPassword"
+                class="flex-1 py-3 rounded-xl bg-[#FF3D6B] text-white text-[13px] font-bold hover:bg-[#e02050] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 @click="deleteAccount"
-              >Excluir</button>
+              >{{ deletingAccount ? 'Excluindo...' : 'Excluir' }}</button>
             </div>
           </div>
         </div>
@@ -186,9 +204,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import api from '@/services/api'
+import { userService } from '@/services/userService'
 import { useAuthStore } from '@/stores/auth'
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
+import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { formatDate } from '@/utils/formatters'
 
 const auth = useAuthStore()
@@ -196,8 +216,11 @@ const auth = useAuthStore()
 const isMenuOpen = ref(false)
 const savingProfile = ref(false)
 const savingPassword = ref(false)
+const loadingProfile = ref(false)
 const showDeleteAccount = ref(false)
 const deleteAccountPassword = ref('')
+const deleteAccountError = ref('')
+const deletingAccount = ref(false)
 const errorMessage = ref('')
 
 const profileForm = ref({ name: '', email: '', created_at: '' })
@@ -240,12 +263,17 @@ const strengthLabel = computed(() => {
 })
 
 const fetchProfile = async () => {
+  loadingProfile.value = true
   errorMessage.value = ''
   try {
-    const { data } = await api.get('/user')
-    profileForm.value = data
+    profileForm.value = {
+      created_at: '',
+      ...await userService.getProfile(),
+    }
   } catch {
     errorMessage.value = 'Não foi possível carregar o perfil.'
+  } finally {
+    loadingProfile.value = false
   }
 }
 
@@ -254,7 +282,7 @@ const saveProfile = async () => {
   profileMsg.value = null
   errorMessage.value = ''
   try {
-    await api.put('/user/profile', { name: profileForm.value.name, email: profileForm.value.email })
+    await userService.updateProfile({ name: profileForm.value.name, email: profileForm.value.email })
     profileMsg.value = { type: 'success', text: 'Perfil atualizado com sucesso.' }
     setTimeout(() => { profileMsg.value = null }, 3000)
   } catch {
@@ -273,7 +301,7 @@ const changePassword = async () => {
   passwordMsg.value = null
   errorMessage.value = ''
   try {
-    await api.put('/user/password', passwordForm.value)
+    await userService.updatePassword(passwordForm.value)
     passwordMsg.value = { type: 'success', text: 'Senha alterada com sucesso.' }
     passwordForm.value = { current_password: '', password: '', password_confirmation: '' }
     setTimeout(() => { passwordMsg.value = null }, 3000)
@@ -285,13 +313,29 @@ const changePassword = async () => {
 }
 
 const deleteAccount = async () => {
-  errorMessage.value = ''
+  deleteAccountError.value = ''
+  deletingAccount.value = true
   try {
-    await api.delete('/user', { data: { password: deleteAccountPassword.value } })
+    await userService.deleteAccount(deleteAccountPassword.value)
     auth.logout()
   } catch {
-    errorMessage.value = 'Não foi possível excluir a conta. Verifique sua senha e tente novamente.'
+    deleteAccountError.value = 'Não foi possível excluir a conta. Verifique sua senha e tente novamente.'
+  } finally {
+    deletingAccount.value = false
   }
+}
+
+const closeDeleteAccount = () => {
+  if (deletingAccount.value) return
+  showDeleteAccount.value = false
+  deleteAccountPassword.value = ''
+  deleteAccountError.value = ''
+}
+
+const openDeleteAccount = () => {
+  deleteAccountPassword.value = ''
+  deleteAccountError.value = ''
+  showDeleteAccount.value = true
 }
 
 onMounted(fetchProfile)

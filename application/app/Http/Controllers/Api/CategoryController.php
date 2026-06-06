@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Services\CategoryService;
-use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CategoryController extends Controller
@@ -18,19 +19,23 @@ class CategoryController extends Controller
         return $this->categoryService->index();
     }
 
-    public function store(Request $request)
+    public function store(CreateCategoryRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|in:income,expense',
-        ]);
-
-        $category = $this->categoryService->store($validated);
+        $category = $this->categoryService->store($request->validated());
 
         return response()->json($category, 201);
     }
 
-    # TODO: refatorar isso aqui
+    public function update(UpdateCategoryRequest $request, string $id)
+    {
+        try {
+            $category = $this->categoryService->update($request->validated(), $id);
+            return response()->json($category);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Categoria não encontrada ou sem permissão.'], 403);
+        }
+    }
+
     public function destroy(string $id)
     {
         try {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateTransactionRequest;
+use App\Http\Requests\GetTransactionsRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Http\Services\TransactionService;
 use Illuminate\Http\Request;
@@ -38,19 +39,15 @@ class TransactionController extends Controller
         );
     }
 
-    public function get(Request $request)
+    public function get(GetTransactionsRequest $request)
     {
-        #todo criar request personalizada
-        $request->validate([
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-        ]);
+        $validated = $request->validated();
 
         return response()->json(
             $this->transactionService->get(
-                $request->get('per_page', 10),
-                $request->get('start_date', null),
-                $request->get('end_date', null)
+                $validated['per_page'] ?? 10,
+                $validated['start_date'],
+                $validated['end_date']
             )
         );
     }

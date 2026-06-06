@@ -25,7 +25,7 @@ class CreateTransactionRequest extends FormRequest
             'category_id' => 'nullable|exists:categories,id',
             'category' => 'nullable|string',
             'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|gt:0',
             'transaction_date' => 'required|date|before_or_equal:today',
             'payment_method' => 'required|in:credit_card,pix,money,others',
             'is_recurring' => 'boolean',

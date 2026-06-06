@@ -11,15 +11,20 @@ class TransactionRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getAllWithCategory(int $perPage = 10, string $startDate, string $endDate)
+    public function getAllWithCategory(int $perPage = 10, ?string $startDate = null, ?string $endDate = null)
     {
-        return $this->model
+        $query = $this->model
             ->with('category')
-            ->where('user_id', auth()->id())
-            ->whereBetween('created_at', [
+            ->where('user_id', auth()->id());
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('transaction_date', [
                 Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay()
-            ])
+            ]);
+        }
+
+        return $query
             ->orderByDesc('transaction_date')
             ->paginate($perPage);
     }

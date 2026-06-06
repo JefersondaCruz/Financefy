@@ -5,21 +5,12 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0">
 
-      <header class="flex items-center justify-between flex-wrap gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors"
-            @click="isMenuOpen = true"
-          >
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-          </button>
-          <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">Categorias</h1>
-            <p class="text-[12px] text-[#4A6080] mt-0.5">Gerencie suas categorias de receitas e despesas</p>
-          </div>
-        </div>
+      <AppPageHeader
+        title="Categorias"
+        subtitle="Gerencie suas categorias de receitas e despesas"
+        @open-menu="isMenuOpen = true"
+      >
+        <template #actions>
         <button
           class="flex items-center gap-2 bg-[#4F8EF7] hover:bg-[#3a7de0] text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-all hover:-translate-y-px whitespace-nowrap"
           @click="openModal()"
@@ -27,7 +18,8 @@
           <span class="text-lg font-light leading-none">+</span>
           Nova Categoria
         </button>
-      </header>
+        </template>
+      </AppPageHeader>
 
       <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 overflow-hidden">
@@ -70,12 +62,19 @@
         </div>
       </div>
 
-      <p
+      <AppAlert
         v-if="errorMessage"
-        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
-      >
-        {{ errorMessage }}
-      </p>
+        :message="errorMessage"
+        variant="error"
+        :action-label="canRetryLoad ? 'Tentar novamente' : ''"
+        @action="fetchCategories"
+      />
+
+      <AppAlert
+        v-if="successMessage"
+        :message="successMessage"
+        variant="success"
+      />
 
       <div v-if="loading" class="flex items-center justify-center py-20">
         <span class="text-[#4A6080] text-sm">Carregando categorias...</span>
@@ -83,11 +82,14 @@
 
       <div v-else-if="filteredCategories.length === 0" class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl flex flex-col items-center justify-center py-20 gap-4">
         <span class="text-5xl">◎</span>
-        <p class="text-[#4A6080] text-sm">Nenhuma categoria encontrada</p>
+        <div class="text-center">
+          <p class="text-sm font-semibold text-white">{{ emptyTitle }}</p>
+          <p class="mt-1 max-w-[360px] text-[12px] text-[#4A6080]">{{ emptyDescription }}</p>
+        </div>
         <button
           class="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#1E2D45] text-[12px] font-semibold text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] transition-all"
-          @click="openModal()"
-        >+ Criar primeira categoria</button>
+          @click="emptyAction"
+        >{{ emptyActionLabel }}</button>
       </div>
 
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -144,6 +146,7 @@
       :isOpen="isModalOpen"
       :isEditing="isEditing"
       :initial="editingForm"
+      :saving="savingCategory"
       @close="closeModal"
       @submit="submitCategory"
     />
@@ -151,6 +154,9 @@
     <DeleteModal
       :isOpen="isDeleteModalOpen"
       :transactionName="deleteTarget?.name"
+      title="Excluir categoria?"
+      :loading="deletingCategory"
+      :error-message="deleteErrorMessage"
       @close="closeDeleteModal"
       @confirm="confirmDelete"
     />
@@ -160,12 +166,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import api from '@/services/api'
+import { categoryService } from '@/services/categoryService'
 import type { Category, CategoryForm } from '@/types/finance'
 
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
+import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
 import CategoryModal from '@/components/modals/CategoryModal.vue'
 import DeleteModal from '@/components/modals/DeleteModal.vue'
+import AppAlert from '@/components/AppAlert.vue'
 
 const isMenuOpen = ref(false)
 const isModalOpen = ref(false)
@@ -177,6 +185,11 @@ const deleteTarget = ref<Category | null>(null)
 const categories = ref<Category[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
+const canRetryLoad = ref(false)
+const savingCategory = ref(false)
+const deletingCategory = ref(false)
+const deleteErrorMessage = ref('')
 const search = ref('')
 const activeTab = ref<'all' | 'income' | 'expense'>('all')
 
@@ -196,14 +209,33 @@ const filteredCategories = computed(() => {
   return list
 })
 
+const hasCategoryFilters = computed(() => search.value !== '' || activeTab.value !== 'all')
+
+const emptyTitle = computed(() =>
+  categories.value.length === 0
+    ? 'Nenhuma categoria cadastrada'
+    : 'Nenhuma categoria encontrada'
+)
+
+const emptyDescription = computed(() =>
+  categories.value.length === 0
+    ? 'Crie uma categoria para organizar suas receitas e despesas.'
+    : 'Ajuste a busca ou veja todas as categorias para encontrar outros registros.'
+)
+
+const emptyActionLabel = computed(() =>
+  hasCategoryFilters.value ? 'Limpar filtros' : '+ Criar primeira categoria'
+)
+
 const fetchCategories = async () => {
   loading.value = true
   errorMessage.value = ''
+  canRetryLoad.value = false
   try {
-    const { data } = await api.get('/categories')
-    categories.value = data
+    categories.value = await categoryService.list()
   } catch {
     errorMessage.value = 'Não foi possível carregar as categorias.'
+    canRetryLoad.value = true
   } finally {
     loading.value = false
   }
@@ -211,35 +243,54 @@ const fetchCategories = async () => {
 
 const createCategory = async (form: CategoryForm) => {
   errorMessage.value = ''
+  successMessage.value = ''
+  savingCategory.value = true
   try {
-    await api.post('/categories', form)
+    await categoryService.create(form)
     closeModal()
     await fetchCategories()
+    successMessage.value = 'Categoria criada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível criar a categoria.'
+    canRetryLoad.value = false
+  } finally {
+    savingCategory.value = false
   }
 }
 
 const updateCategory = async (form: CategoryForm) => {
+  if (!editingId.value) return
   errorMessage.value = ''
+  successMessage.value = ''
+  savingCategory.value = true
   try {
-    await api.put(`/categories/${editingId.value}`, form)
+    await categoryService.update(editingId.value, form)
     closeModal()
     await fetchCategories()
+    successMessage.value = 'Categoria atualizada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível atualizar a categoria.'
+    canRetryLoad.value = false
+  } finally {
+    savingCategory.value = false
   }
 }
 
 const confirmDelete = async () => {
   if (!deleteTarget.value) return
   errorMessage.value = ''
+  deleteErrorMessage.value = ''
+  successMessage.value = ''
+  deletingCategory.value = true
   try {
-    await api.delete(`/categories/${deleteTarget.value.id}`)
-    closeDeleteModal()
+    await categoryService.remove(deleteTarget.value.id)
+    resetDeleteModal()
     await fetchCategories()
+    successMessage.value = 'Categoria excluída com sucesso.'
   } catch {
-    errorMessage.value = 'Não foi possível excluir a categoria.'
+    deleteErrorMessage.value = 'Não foi possível excluir a categoria.'
+  } finally {
+    deletingCategory.value = false
   }
 }
 
@@ -269,12 +320,28 @@ const closeModal = () => {
 
 const openDeleteModal = (cat: Category) => {
   deleteTarget.value = cat
+  deleteErrorMessage.value = ''
   isDeleteModalOpen.value = true
 }
 
 const closeDeleteModal = () => {
+  if (deletingCategory.value) return
+  resetDeleteModal()
+}
+
+const resetDeleteModal = () => {
   isDeleteModalOpen.value = false
   deleteTarget.value = null
+  deleteErrorMessage.value = ''
+}
+
+const emptyAction = () => {
+  if (hasCategoryFilters.value) {
+    search.value = ''
+    activeTab.value = 'all'
+  } else {
+    openModal()
+  }
 }
 
 onMounted(fetchCategories)

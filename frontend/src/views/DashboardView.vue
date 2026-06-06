@@ -5,50 +5,65 @@
 
     <div class="flex-1 flex flex-col gap-6 px-6 py-6 md:px-8 min-w-0">
 
-      <header class="flex items-center justify-between flex-wrap gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            class="w-10 h-10 flex flex-col items-center justify-center gap-[5px] bg-[#0D1526] border border-[#1E2D45] rounded-xl hover:border-[#4F8EF7] transition-colors"
-            @click="isMenuOpen = true"
-          >
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-            <span class="block w-4 h-[1.5px] bg-white rounded" />
-          </button>
-          <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">Dashboard</h1>
-            <p class="text-[12px] text-[#4A6080] mt-0.5">{{ greeting }}, bem-vindo de volta.</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3 flex-wrap">
+      <AppPageHeader
+        title="Dashboard"
+        :subtitle="`${greeting}, bem-vindo de volta.`"
+        @open-menu="isMenuOpen = true"
+      >
+        <template #actions>
           <DateRangeFilter @change="onDateChange" />
           <button
+            :disabled="loadingCategories"
             class="flex items-center gap-2 bg-[#4F8EF7] hover:bg-[#3a7de0] text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-colors hover:-translate-y-px duration-150 whitespace-nowrap"
             @click="openModal"
           >
             <span class="text-lg font-light leading-none">+</span>
-            Nova Transação
+            {{ loadingCategories ? 'Carregando categorias...' : 'Nova Transação' }}
           </button>
-        </div>
-      </header>
+        </template>
+      </AppPageHeader>
 
-      <p
+      <AppAlert
         v-if="errorMessage"
-        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
-      >
-        {{ errorMessage }}
-      </p>
+        :message="errorMessage"
+        variant="error"
+        :action-label="canRetryLoad ? 'Tentar novamente' : ''"
+        @action="loadData"
+      />
 
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <AppAlert
+        v-if="successMessage"
+        :message="successMessage"
+        variant="success"
+      />
+
+      <section v-if="loadingTransactions" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div
+          v-for="label in ['Despesas Totais', 'Receitas Totais', 'Saldo Líquido']"
+          :key="label"
+          class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-6 text-sm text-[#4A6080]"
+        >
+          Carregando {{ label.toLowerCase() }}...
+        </div>
+      </section>
+
+      <section v-else class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <KpiCard label="Despesas Totais" icon="📉" :value="totalExpenses" :trend="12"  variant="expense" />
         <KpiCard label="Receitas Totais" icon="📈" :value="totalIncome"   :trend="8"   variant="income"  />
         <KpiCard label="Saldo Líquido"   icon="💰" :value="netBalance"    :trend="netBalance >= 0 ? 5 : -5" variant="balance" />
       </section>
 
       <section class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-5">
-        <CategoryChart :transactions="transactions" />
-        <TrendChart    :transactions="transactions" />
+        <CategoryChart
+          :transactions="transactions"
+          :loading="loadingTransactions"
+          :error-message="transactionsStateError"
+        />
+        <TrendChart
+          :transactions="transactions"
+          :loading="loadingTransactions"
+          :error-message="transactionsStateError"
+        />
       </section>
 
     <div
@@ -101,12 +116,20 @@
         :current-page="currentPage"
         :last-page="lastPage"
         :total="total"
+        :loading="loadingTransactions"
+        :error-message="transactionsStateError"
+        error-action-label="Tentar novamente"
+        :empty-title="transactionsEmptyTitle"
+        :empty-description="transactionsEmptyDescription"
+        :empty-action-label="transactionsEmptyActionLabel"
         @edit="openEditModal"
         @delete="openDeleteModal"
         @next-page="nextPage"
         @prev-page="prevPage"
         @search="q => (searchQuery = q)"
         @filter-type="v => (typeFilter = v)"
+        @empty-action="onTransactionsEmptyAction"
+        @error-action="loadData"
       />
 
     </div>
@@ -116,6 +139,7 @@
       :isEditing="isEditing"
       :categories="categories"
       :initial="editingForm"
+      :saving="savingTransaction"
       @close="closeModal"
       @submit="submitTransaction"
     />
@@ -123,6 +147,8 @@
     <DeleteModal
       :isOpen="isDeleteModalOpen"
       :transactionName="deleteTarget?.description"
+      :loading="deletingTransaction"
+      :error-message="deleteErrorMessage"
       @close="closeDeleteModal"
       @confirm="confirmDelete"
     />
@@ -137,6 +163,7 @@ import { dashboardService } from '@/services/dashboardService'
 import type { Transaction, Category, TransactionForm, DateFilter } from '@/types/finance'
 
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
+import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
 import DateRangeFilter from '@/components/dashboard/DateRangeFilter.vue'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
 import CategoryChart from '@/components/dashboard/CategoryChart.vue'
@@ -144,6 +171,7 @@ import TrendChart from '@/components/dashboard/TrendChart.vue'
 import TransactionsTable from '@/components/dashboard/TransactionsTable.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import DeleteModal from '@/components/modals/DeleteModal.vue'
+import AppAlert from '@/components/AppAlert.vue'
 
 const isMenuOpen = ref(false)
 const isModalOpen = ref(false)
@@ -153,6 +181,14 @@ const editingForm = ref<Partial<TransactionForm>>({})
 const isDeleteModalOpen = ref(false)
 const deleteTarget = ref<Transaction | null>(null)
 const errorMessage = ref('')
+const successMessage = ref('')
+const canRetryLoad = ref(false)
+const loadingTransactions = ref(false)
+const loadingCategories = ref(false)
+const savingTransaction = ref(false)
+const deletingTransaction = ref(false)
+const deleteErrorMessage = ref('')
+const transactionsErrorMessage = ref('')
 
 const transactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
@@ -195,6 +231,28 @@ const filteredTransactions = computed(() => {
   return list
 })
 
+const hasTableFilters = computed(() => searchQuery.value !== '' || typeFilter.value !== '')
+
+const transactionsEmptyTitle = computed(() =>
+  total.value === 0
+    ? 'Nenhuma transação cadastrada'
+    : 'Nenhum resultado para os filtros'
+)
+
+const transactionsEmptyDescription = computed(() =>
+  total.value === 0
+    ? 'Cadastre sua primeira transação para acompanhar seu fluxo financeiro no dashboard.'
+    : 'Ajuste a busca ou o tipo para localizar outras transações.'
+)
+
+const transactionsEmptyActionLabel = computed(() =>
+  hasTableFilters.value ? 'Limpar filtros' : 'Criar primeira transação'
+)
+
+const transactionsStateError = computed(() =>
+  transactions.value.length === 0 ? transactionsErrorMessage.value : ''
+)
+
 const greeting = computed(() => {
   const h = new Date().getHours()
   if (h < 12) return 'Bom dia'
@@ -203,9 +261,12 @@ const greeting = computed(() => {
 })
 
 const fetchTransactions = async (page = 1) => {
+  loadingTransactions.value = true
   errorMessage.value = ''
+  transactionsErrorMessage.value = ''
+  canRetryLoad.value = false
   try {
-    const { data } = await dashboardService.getTransactions({
+    const data = await dashboardService.getTransactions({
       page,
       per_page: perPage.value,
       start_date: dateFilter.value.start_date,
@@ -217,50 +278,80 @@ const fetchTransactions = async (page = 1) => {
     total.value = data.total
   } catch {
     errorMessage.value = 'Não foi possível carregar as transações.'
+    transactionsErrorMessage.value = errorMessage.value
+    canRetryLoad.value = true
+  } finally {
+    loadingTransactions.value = false
   }
 }
 
 const fetchCategories = async () => {
+  loadingCategories.value = true
   try {
-    const response = await dashboardService.getCategories()
-    categories.value = response.data
+    categories.value = await dashboardService.getCategories()
   } catch {
     errorMessage.value = 'Não foi possível carregar as categorias.'
+    canRetryLoad.value = true
+  } finally {
+    loadingCategories.value = false
   }
+}
+
+const loadData = async () => {
+  successMessage.value = ''
+  await Promise.all([fetchTransactions(currentPage.value), fetchCategories()])
 }
 
 const createTransaction = async (form: TransactionForm) => {
   errorMessage.value = ''
+  successMessage.value = ''
+  savingTransaction.value = true
   try {
     await dashboardService.createTransaction(form)
     closeModal()
     await fetchTransactions()
+    successMessage.value = 'Transação criada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível criar a transação.'
+    canRetryLoad.value = false
+  } finally {
+    savingTransaction.value = false
   }
 }
 
 const updateTransaction = async (form: TransactionForm) => {
   if (!editingId.value) return
   errorMessage.value = ''
+  successMessage.value = ''
+  savingTransaction.value = true
   try {
     await dashboardService.updateTransaction(editingId.value, form)
     closeModal()
     await fetchTransactions(currentPage.value)
+    successMessage.value = 'Transação atualizada com sucesso.'
   } catch {
     errorMessage.value = 'Não foi possível atualizar a transação.'
+    canRetryLoad.value = false
+  } finally {
+    savingTransaction.value = false
   }
 }
 
 const confirmDelete = async () => {
   if (!deleteTarget.value) return
   errorMessage.value = ''
+  deleteErrorMessage.value = ''
+  successMessage.value = ''
+  deletingTransaction.value = true
   try {
     await dashboardService.deleteTransaction(deleteTarget.value.id)
-    closeDeleteModal()
+    resetDeleteModal()
     await fetchTransactions(currentPage.value)
+    successMessage.value = 'Transação excluída com sucesso.'
   } catch {
-    errorMessage.value = 'Não foi possível excluir a transação.'
+    deleteErrorMessage.value = 'Não foi possível excluir a transação.'
+  } finally {
+    deletingTransaction.value = false
   }
 }
 
@@ -297,12 +388,19 @@ const closeModal = () => {
 
 const openDeleteModal = (t: Transaction) => {
   deleteTarget.value = t
+  deleteErrorMessage.value = ''
   isDeleteModalOpen.value = true
 }
 
 const closeDeleteModal = () => {
+  if (deletingTransaction.value) return
+  resetDeleteModal()
+}
+
+const resetDeleteModal = () => {
   isDeleteModalOpen.value = false
   deleteTarget.value = null
+  deleteErrorMessage.value = ''
 }
 
 const onDateChange = (df: DateFilter) => {
@@ -312,8 +410,16 @@ const onDateChange = (df: DateFilter) => {
 const nextPage = () => fetchTransactions(currentPage.value + 1)
 const prevPage = () => fetchTransactions(currentPage.value - 1)
 
+const onTransactionsEmptyAction = () => {
+  if (hasTableFilters.value) {
+    searchQuery.value = ''
+    typeFilter.value = ''
+  } else {
+    openModal()
+  }
+}
+
 onMounted(async () => {
-  await fetchTransactions()
-  await fetchCategories()
+  await loadData()
 })
 </script>

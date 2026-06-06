@@ -24,7 +24,7 @@ class UpdateTransactionRequest extends FormRequest
         return [
             'category_id' => 'sometimes|exists:categories,id',
             'description' => 'sometimes|string|max:255',
-            'amount' => 'sometimes|numeric|min:0',
+            'amount' => 'sometimes|numeric|gt:0',
             'transaction_date' => 'sometimes|date|before_or_equal:today',
             'payment_method' => 'sometimes|in:credit_card,pix,money,others',
             'is_recurring' => 'sometimes|boolean',
