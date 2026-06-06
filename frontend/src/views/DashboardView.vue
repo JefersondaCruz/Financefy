@@ -33,6 +33,13 @@
         </div>
       </header>
 
+      <p
+        v-if="errorMessage"
+        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
+      >
+        {{ errorMessage }}
+      </p>
+
       <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <KpiCard label="Despesas Totais" icon="📉" :value="totalExpenses" :trend="12"  variant="expense" />
         <KpiCard label="Receitas Totais" icon="📈" :value="totalIncome"   :trend="8"   variant="income"  />
@@ -142,9 +149,10 @@ const isMenuOpen = ref(false)
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
-const editingForm  = ref<Partial<TransactionForm>>({})
+const editingForm = ref<Partial<TransactionForm>>({})
 const isDeleteModalOpen = ref(false)
 const deleteTarget = ref<Transaction | null>(null)
+const errorMessage = ref('')
 
 const transactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
@@ -154,7 +162,7 @@ const total = ref(0)
 const perPage = ref(10)
 
 const searchQuery = ref('')
-const typeFilter  = ref('')
+const typeFilter = ref('')
 const now = new Date()
 const dateFilter = ref<DateFilter>({
   start_date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
@@ -189,10 +197,13 @@ const filteredTransactions = computed(() => {
 
 const greeting = computed(() => {
   const h = new Date().getHours()
-  if (h < 12) return 'Bom dia'; if (h < 18) return 'Boa tarde'; return 'Boa noite'
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
 })
 
 const fetchTransactions = async (page = 1) => {
+  errorMessage.value = ''
   try {
     const { data } = await dashboardService.getTransactions({
       page,
@@ -204,60 +215,105 @@ const fetchTransactions = async (page = 1) => {
     currentPage.value = data.current_page
     lastPage.value = data.last_page
     total.value = data.total
-  } catch (e) { console.error(e) }
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as transações.'
+  }
 }
 
-const fetchCategories = () =>
-  dashboardService.getCategories().then(
-      r => categories.value = r.data
-    ).catch(console.error)
+const fetchCategories = async () => {
+  try {
+    const response = await dashboardService.getCategories()
+    categories.value = response.data
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as categorias.'
+  }
+}
 
 const createTransaction = async (form: TransactionForm) => {
-  await dashboardService.createTransaction(form);
-  closeModal();
-  fetchTransactions()
+  errorMessage.value = ''
+  try {
+    await dashboardService.createTransaction(form)
+    closeModal()
+    await fetchTransactions()
+  } catch {
+    errorMessage.value = 'Não foi possível criar a transação.'
+  }
 }
 
 const updateTransaction = async (form: TransactionForm) => {
-  await dashboardService.updateTransaction(editingId.value!, form);
-  closeModal(); fetchTransactions(currentPage.value)
+  if (!editingId.value) return
+  errorMessage.value = ''
+  try {
+    await dashboardService.updateTransaction(editingId.value, form)
+    closeModal()
+    await fetchTransactions(currentPage.value)
+  } catch {
+    errorMessage.value = 'Não foi possível atualizar a transação.'
+  }
 }
 
 const confirmDelete = async () => {
-  await dashboardService.deleteTransaction(deleteTarget.value!.id);
-  closeDeleteModal();
-  fetchTransactions(currentPage.value)
+  if (!deleteTarget.value) return
+  errorMessage.value = ''
+  try {
+    await dashboardService.deleteTransaction(deleteTarget.value.id)
+    closeDeleteModal()
+    await fetchTransactions(currentPage.value)
+  } catch {
+    errorMessage.value = 'Não foi possível excluir a transação.'
+  }
 }
 
 const submitTransaction = (form: TransactionForm) =>
   isEditing.value ? updateTransaction(form) : createTransaction(form)
 
 const openModal = () => {
-  isEditing.value = false;
-  editingForm.value = {};
+  isEditing.value = false
+  editingForm.value = {}
   isModalOpen.value = true
 }
 
 const openEditModal = (t: Transaction) => {
-  isEditing.value = true; editingId.value = t.id
+  isEditing.value = true
+  editingId.value = t.id
   editingForm.value = {
-    category_id: t.category_id, description: t.description,
-    amount: t.amount, transaction_date: t.transaction_date,
-    payment_method: t.payment_method, is_recurring: t.is_recurring ?? false,
+    category_id: t.category_id,
+    description: t.description,
+    amount: t.amount,
+    transaction_date: t.transaction_date,
+    payment_method: t.payment_method,
+    is_recurring: t.is_recurring ?? false,
     recurrence_type: t.recurrence_type ?? null,
   }
   isModalOpen.value = true
 }
 
-const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
-const openDeleteModal = (t: Transaction) => { deleteTarget.value = t; isDeleteModalOpen.value = true }
-const closeDeleteModal = () => { isDeleteModalOpen.value = false; deleteTarget.value = null }
-const onDateChange = (df: DateFilter) => { dateFilter.value = df; fetchTransactions(1) }
+const closeModal = () => {
+  isModalOpen.value = false
+  isEditing.value = false
+  editingId.value = null
+  editingForm.value = {}
+}
+
+const openDeleteModal = (t: Transaction) => {
+  deleteTarget.value = t
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  deleteTarget.value = null
+}
+
+const onDateChange = (df: DateFilter) => {
+  dateFilter.value = df
+  fetchTransactions(1)
+}
 const nextPage = () => fetchTransactions(currentPage.value + 1)
 const prevPage = () => fetchTransactions(currentPage.value - 1)
 
 onMounted(async () => {
-  await fetchTransactions();
+  await fetchTransactions()
   await fetchCategories()
 })
 </script>
