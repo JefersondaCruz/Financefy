@@ -44,11 +44,48 @@ class TransactionController extends Controller
         $validated = $request->validated();
 
         return response()->json(
-            $this->transactionService->get(
+            $this->transactionService->getFiltered(
                 $validated['per_page'] ?? 10,
                 $validated['start_date'],
-                $validated['end_date']
+                $validated['end_date'],
+                $this->filtersFrom($validated)
             )
         );
+    }
+
+    public function summary(GetTransactionsRequest $request)
+    {
+        $validated = $request->validated();
+
+        return response()->json(
+            $this->transactionService->summary(
+                $validated['start_date'],
+                $validated['end_date'],
+                $this->filtersFrom($validated)
+            )
+        );
+    }
+
+    public function exportCsv(GetTransactionsRequest $request)
+    {
+        $validated = $request->validated();
+        $csv = $this->transactionService->exportCsv(
+            $validated['start_date'],
+            $validated['end_date'],
+            $this->filtersFrom($validated)
+        );
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="transacoes.csv"',
+        ]);
+    }
+
+    private function filtersFrom(array $validated): array
+    {
+        return collect($validated)
+            ->only(['search', 'type', 'category_id', 'payment_method', 'recurring'])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->all();
     }
 }

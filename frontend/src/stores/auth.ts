@@ -27,5 +27,9 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('token')
       router.push('/login')
     },
+
+    setUser(user: AuthUser) {
+      this.user = user
+    },
   },
 })

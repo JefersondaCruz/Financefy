@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-3 bg-[#0D1526] border border-[#1E2D45] rounded-xl px-4 py-2.5">
+  <div class="flex flex-wrap items-center gap-3 bg-[#0D1526] border border-[#1E2D45] rounded-xl px-4 py-2.5">
     <span class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#4A6080] whitespace-nowrap">Período</span>
 
     <div class="flex items-center gap-1.5">
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { DateFilter } from '@/types/finance'
 
 const emit = defineEmits<{ (e: 'change', value: DateFilter): void }>()
@@ -70,4 +70,6 @@ const shift = (delta: number) => {
   selectedYear.value  = y
   emitChange()
 }
+
+onMounted(emitChange)
 </script>

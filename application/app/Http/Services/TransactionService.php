@@ -52,6 +52,45 @@ class TransactionService extends BaseService
         return $this->formatPaginatedTransactions($transactions);
     }
 
+    public function getFiltered(int $perPage, string $startDate, string $endDate, array $filters = [])
+    {
+        $transactions = $this->transactionRepository->getAllWithCategory($perPage, $startDate, $endDate, $filters);
+
+        return $this->formatPaginatedTransactions($transactions);
+    }
+
+    public function summary(string $startDate, string $endDate, array $filters = []): array
+    {
+        return $this->transactionRepository->getSummary($startDate, $endDate, $filters);
+    }
+
+    public function exportCsv(string $startDate, string $endDate, array $filters = []): string
+    {
+        $transactions = $this->transactionRepository->getAllForExport($startDate, $endDate, $filters);
+        $handle = fopen('php://temp', 'r+');
+
+        fputcsv($handle, ['Descricao', 'Categoria', 'Tipo', 'Pagamento', 'Data', 'Valor', 'Recorrente', 'Recorrencia']);
+
+        foreach ($transactions as $transaction) {
+            fputcsv($handle, [
+                $transaction->description,
+                $transaction->category?->name ?? 'Sem categoria',
+                $transaction->category?->type === 'income' ? 'Receita' : 'Despesa',
+                $transaction->payment_method,
+                $transaction->transaction_date,
+                number_format((float) $transaction->amount, 2, '.', ''),
+                $transaction->is_recurring ? 'Sim' : 'Nao',
+                $transaction->recurrence_type ?? '',
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return "\xEF\xBB\xBF" . $csv;
+    }
+
     public function update(array $data, string $id)
     {
         return new TransactionResource($this->transactionRepository->update($data, $id)->load('category'));

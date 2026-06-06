@@ -1,10 +1,10 @@
 import api from './api'
 
 export interface UserProfile {
-  id?: number
+  id: number
   name: string
   email: string
-  phone?: string
+  phone: string
   created_at?: string
 }
 

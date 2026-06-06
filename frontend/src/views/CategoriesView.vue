@@ -24,22 +24,40 @@
       <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 overflow-hidden">
           <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#4F8EF7]" />
-          <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Total de Categorias</p>
-          <p class="font-mono text-3xl font-bold text-[#4F8EF7]">{{ categories.length }}</p>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Total</p>
+              <p class="font-mono text-3xl font-bold text-white">{{ categories.length }}</p>
+              <p class="mt-1 text-[11px] text-[#4A6080]">categorias cadastradas</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-[#4F8EF7]/12 border border-[#4F8EF7]/20 flex items-center justify-center text-[#4F8EF7] text-lg">#</div>
+          </div>
         </div>
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 overflow-hidden">
-          <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#FF3D6B]" />
-          <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Despesas</p>
-          <p class="font-mono text-3xl font-bold text-[#FF3D6B]">{{ expenseCategories.length }}</p>
+          <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#FF3D6B]/80" />
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Despesas</p>
+              <p class="font-mono text-3xl font-bold text-white">{{ expenseCategories.length }}</p>
+              <p class="mt-1 text-[11px] text-[#4A6080]">saídas de dinheiro</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-white/[0.04] border border-[#1E2D45] flex items-center justify-center text-[#FF3D6B] text-lg">-</div>
+          </div>
         </div>
         <div class="relative bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 overflow-hidden">
-          <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#00E5A0]" />
-          <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Receitas</p>
-          <p class="font-mono text-3xl font-bold text-[#00E5A0]">{{ incomeCategories.length }}</p>
+          <div class="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl bg-[#00E5A0]/80" />
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#4A6080] mb-3">Receitas</p>
+              <p class="font-mono text-3xl font-bold text-white">{{ incomeCategories.length }}</p>
+              <p class="mt-1 text-[11px] text-[#4A6080]">entradas de dinheiro</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-white/[0.04] border border-[#1E2D45] flex items-center justify-center text-[#00E5A0] text-lg">+</div>
+          </div>
         </div>
       </section>
 
-      <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-1 bg-[#0D1526] border border-[#1E2D45] rounded-xl p-1">
           <button
             v-for="tab in tabs"
@@ -96,47 +114,52 @@
         <div
           v-for="cat in filteredCategories"
           :key="cat.id"
-          class="group bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 hover:border-[#2A3F5F] transition-all hover:-translate-y-0.5 duration-200 relative overflow-hidden"
+          class="group bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-5 hover:border-[#2A3F5F] hover:bg-[#101A2E] transition-all hover:-translate-y-0.5 duration-200 relative overflow-hidden"
         >
           <div
-            class="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl"
-            :class="cat.type === 'income' ? 'bg-[#00E5A0]' : 'bg-[#FF3D6B]'"
+            class="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full"
+            :class="cat.type === 'income' ? 'bg-[#00E5A0]/80' : 'bg-[#FF3D6B]/80'"
           />
 
-          <div class="flex items-start justify-between mb-4">
-            <div
-              class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-              :class="cat.type === 'income' ? 'bg-[#00E5A0]/10' : 'bg-[#FF3D6B]/10'"
-            >
-              {{ cat.type === 'income' ? '📈' : '📉' }}
+          <div class="flex items-start justify-between gap-3 mb-5">
+            <div class="flex items-center gap-3 min-w-0">
+              <div
+                class="w-11 h-11 mb-3 rounded-xl flex items-center justify-center shrink-0 border border-[#1E2D45] bg-white/[0.04] text-[13px] font-bold text-[#E8EEFF]"
+              >
+                {{ categoryInitial(cat.name) }}
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-[14px] font-bold text-white truncate">{{ cat.name }}</h3>
+                <p class="mt-1 text-[11px] text-[#4A6080]">{{ categoryOwnershipLabel(cat) }}</p>
+              </div>
             </div>
 
             <div
                 v-if="cat.user_id !== null"
-                class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                class="flex gap-1.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
               <button
-                class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] hover:bg-[#4F8EF7]/10 transition-all text-[12px]"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] bg-white/[0.03] text-[#4A6080] hover:border-[#4F8EF7] hover:text-[#4F8EF7] hover:bg-[#4F8EF7]/10 transition-all text-[12px]"
+                title="Editar categoria"
                 @click="openModal(cat)"
               >✎</button>
               <button
-                class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#1E2D45] text-[#4A6080] hover:border-[#FF3D6B] hover:text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-all text-[12px]"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] bg-white/[0.03] text-[#4A6080] hover:border-[#FF3D6B] hover:text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-all text-[12px]"
+                title="Excluir categoria"
                 @click="openDeleteModal(cat)"
               >✕</button>
             </div>
           </div>
 
-          <h3 class="text-[14px] font-bold text-white mb-1.5 truncate">{{ cat.name }}</h3>
-
-          <span
-            class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
-            :class="cat.type === 'income'
-              ? 'bg-[#00E5A0]/10 text-[#00E5A0]'
-              : 'bg-[#FF3D6B]/10 text-[#FF3D6B]'"
-          >
-            <span class="w-1.5 h-1.5 rounded-full" :class="cat.type === 'income' ? 'bg-[#00E5A0]' : 'bg-[#FF3D6B]'" />
-            {{ cat.type === 'income' ? 'Receita' : 'Despesa' }}
-          </span>
+          <div class="flex items-center justify-between gap-3 pt-4 border-t border-[#1E2D45]/80">
+            <span
+              class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/[0.04] border border-[#1E2D45] text-[#8BA3C0]"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :class="cat.type === 'income' ? 'bg-[#00E5A0]' : 'bg-[#FF3D6B]'" />
+              {{ categoryTypeLabel(cat.type) }}
+            </span>
+            <span class="text-[11px] text-[#4A6080]">{{ cat.type === 'income' ? 'Entrada' : 'Saída' }}</span>
+          </div>
         </div>
       </div>
 
@@ -226,6 +249,16 @@ const emptyDescription = computed(() =>
 const emptyActionLabel = computed(() =>
   hasCategoryFilters.value ? 'Limpar filtros' : '+ Criar primeira categoria'
 )
+
+const categoryInitial = (name: string) => {
+  const [first = ''] = name.trim()
+  return first.toUpperCase() || '#'
+}
+
+const categoryTypeLabel = (type: Category['type']) => type === 'income' ? 'Receita' : 'Despesa'
+
+const categoryOwnershipLabel = (category: Category) =>
+  category.user_id === null ? 'Categoria padrão' : 'Categoria personalizada'
 
 const fetchCategories = async () => {
   loading.value = true

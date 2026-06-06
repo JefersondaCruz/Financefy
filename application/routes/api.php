@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\WebhookController;
 
@@ -14,6 +15,12 @@ Route::group(['prefix'=> 'auth'], function () {
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/user', [UserController::class, 'me']);
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::put('/user/password', [UserController::class, 'updatePassword']);
+    Route::delete('/user', [UserController::class, 'destroyCurrent']);
+    Route::get('/transactions/summary', [TransactionController::class, 'summary']);
+    Route::get('/transactions/export', [TransactionController::class, 'exportCsv']);
     Route::get('/transactions', [TransactionController::class, 'get']);
     Route::post('/transactions', [TransactionController::class, 'store']);
     Route::put('/transactions/{id}', [TransactionController::class, 'update']);

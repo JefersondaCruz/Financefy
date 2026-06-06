@@ -127,6 +127,11 @@
                   @click="$emit('edit', t)"
                 >✎</button>
                 <button
+                  class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] bg-transparent text-[#4A6080] hover:border-[#00E5A0] hover:text-[#00E5A0] hover:bg-[#00E5A0]/10 transition-all text-[13px]"
+                  title="Duplicar"
+                  @click="$emit('duplicate', t)"
+                >⧉</button>
+                <button
                   class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1E2D45] bg-transparent text-[#4A6080] hover:border-[#FF3D6B] hover:text-[#FF3D6B] hover:bg-[#FF3D6B]/10 transition-all text-[13px]"
                   title="Excluir"
                   @click="$emit('delete', t)"
@@ -202,6 +207,7 @@ const props = withDefaults(defineProps<{
 
 defineEmits<{
   (e: 'edit', t: Transaction): void
+  (e: 'duplicate', t: Transaction): void
   (e: 'delete', t: Transaction): void
   (e: 'next-page'): void
   (e: 'prev-page'): void
