@@ -78,7 +78,7 @@
                 class="font-mono text-[13px] font-bold"
                 :class="t.category?.type === 'income' ? 'text-[#00E5A0]' : 'text-[#FF3D6B]'"
               >
-                {{ t.category?.type === 'income' ? '+' : '−' }} R$ {{ Math.abs(Number(t.amount)).toFixed(2) }}
+                {{ t.category?.type === 'income' ? '+' : '−' }} R$ {{ formatCurrency(Number(t.amount)) }}
               </span>
             </td>
             <td class="px-5 py-3.5">
@@ -121,6 +121,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Transaction } from '@/types/finance'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 defineProps<{
   transactions: Transaction[]
@@ -140,7 +141,4 @@ defineEmits<{
 
 const search = ref('')
 const typeFilter = ref('')
-
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 </script>

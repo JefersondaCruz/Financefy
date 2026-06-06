@@ -2,6 +2,12 @@ export interface Category {
   id: number
   name: string
   type: 'income' | 'expense'
+  user_id?: number | null
+}
+
+export interface CategoryForm {
+  name: string
+  type: 'income' | 'expense'
 }
 
 export interface Transaction {
@@ -38,7 +44,7 @@ export interface Goal {
   id: number
   name: string
   icon: string
-  target_amount:  number
+  target_amount: number
   current_amount: number
   deadline?: string | null
 }
@@ -46,7 +52,7 @@ export interface Goal {
 export interface GoalForm {
   name: string
   icon: string
-  target_amount:  number
+  target_amount: number
   current_amount: number
   deadline: string
 }

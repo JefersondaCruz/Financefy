@@ -32,6 +32,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Transaction } from '@/types/finance'
+import { formatCurrency } from '@/utils/formatters'
 
 const props = defineProps<{ transactions: Transaction[] }>()
 
@@ -54,14 +55,12 @@ const categoryData = computed(() => {
       name, value,
       color: COLORS[i % COLORS.length],
       pct: total ? ((value / total) * 100).toFixed(1) : '0',
-      formatted: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(value),
+      formatted: formatCurrency(value),
     }))
 })
 
 const totalFormatted = computed(() =>
-  new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(
-    categoryData.value.reduce((s, c) => s + c.value, 0)
-  )
+  formatCurrency(categoryData.value.reduce((s, c) => s + c.value, 0))
 )
 
 const renderChart = () => {
@@ -92,7 +91,7 @@ const renderChart = () => {
           borderColor: '#1E2D45',
           borderWidth: 1,
           padding: 10,
-          callbacks: { label: (c) => `  R$ ${Number(c.parsed).toFixed(2)}` },
+          callbacks: { label: (c) => `  R$ ${formatCurrency(Number(c.parsed))}` },
         },
       },
     },

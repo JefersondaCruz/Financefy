@@ -122,6 +122,13 @@
         >✕ Limpar</button>
       </div>
 
+      <p
+        v-if="errorMessage"
+        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
+      >
+        {{ errorMessage }}
+      </p>
+
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-[#1E2D45]">
           <div class="flex items-center gap-3">
@@ -173,7 +180,7 @@
                 </td>
                 <td class="px-5 py-3.5">
                   <span class="flex items-center gap-1.5 text-[12px] text-[#4A6080]">
-                    {{ paymentIcon(t.payment_method) }} {{ paymentLabel(t.payment_method) }}
+                    {{ paymentMethodIcon(t.payment_method) }} {{ paymentMethodLabel(t.payment_method) }}
                   </span>
                 </td>
                 <td class="px-5 py-3.5 text-[12px] text-[#4A6080]">{{ formatDate(t.transaction_date) }}</td>
@@ -242,6 +249,12 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import type { Transaction, Category, TransactionForm } from '@/types/finance'
+import {
+  formatCurrency,
+  formatDate,
+  paymentMethodIcon,
+  paymentMethodLabel,
+} from '@/utils/formatters'
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import DeleteModal from '@/components/modals/DeleteModal.vue'
@@ -254,6 +267,7 @@ const editingForm = ref<Partial<TransactionForm>>({})
 const isDeleteModalOpen = ref(false)
 const deleteTarget = ref<Transaction | null>(null)
 const loading = ref(false)
+const errorMessage = ref('')
 const allTransactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
 const currentPage = ref(1)
@@ -306,6 +320,7 @@ watch(filters, () => { currentPage.value = 1 }, { deep: true })
 
 const fetchAll = async () => {
   loading.value = true
+  errorMessage.value = ''
   try {
     const { data } = await api.get('/transactions', {
       params: {
@@ -315,50 +330,88 @@ const fetchAll = async () => {
       },
     })
     allTransactions.value = data.data
-  } catch (e) { console.error(e) }
-  finally { loading.value = false }
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as transações.'
+  } finally {
+    loading.value = false
+  }
 }
 
 const fetchCategories = async () => {
-  try { const { data } = await api.get('/categories'); categories.value = data } catch (e) { console.error(e) }
+  try {
+    const { data } = await api.get('/categories')
+    categories.value = data
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as categorias.'
+  }
 }
 
 const submitTransaction = async (form: TransactionForm) => {
+  errorMessage.value = ''
   try {
     if (isEditing.value) await api.put(`/transactions/${editingId.value}`, form)
     else await api.post('/transactions', form)
     closeModal()
     await fetchAll()
-  } catch (e) { console.error(e) }
+  } catch {
+    errorMessage.value = 'Não foi possível salvar a transação.'
+  }
 }
 
 const confirmDelete = async () => {
   if (!deleteTarget.value) return
+  errorMessage.value = ''
   try {
     await api.delete(`/transactions/${deleteTarget.value.id}`)
     isDeleteModalOpen.value = false
     deleteTarget.value = null
     await fetchAll()
-  } catch (e) { console.error(e) }
+  } catch {
+    errorMessage.value = 'Não foi possível excluir a transação.'
+  }
 }
 
 const openModal = (t?: Transaction) => {
   if (t) {
-    isEditing.value = true; editingId.value = t.id
-    editingForm.value = { category_id: t.category_id, description: t.description, amount: t.amount, transaction_date: t.transaction_date, payment_method: t.payment_method, is_recurring: t.is_recurring, recurrence_type: t.recurrence_type }
+    isEditing.value = true
+    editingId.value = t.id
+    editingForm.value = {
+      category_id: t.category_id,
+      description: t.description,
+      amount: t.amount,
+      transaction_date: t.transaction_date,
+      payment_method: t.payment_method,
+      is_recurring: t.is_recurring,
+      recurrence_type: t.recurrence_type,
+    }
   } else {
-    isEditing.value = false; editingId.value = null; editingForm.value = {}
+    isEditing.value = false
+    editingId.value = null
+    editingForm.value = {}
   }
   isModalOpen.value = true
 }
-const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
-const openDeleteModal  = (t: Transaction) => { deleteTarget.value = t; isDeleteModalOpen.value = true }
-const clearFilters = () => { filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' } }
 
-const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v)
-const formatDate  = (d: string) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-const paymentIcon = (m: string) => ({ pix: '⚡', credit_card: '💳', money: '💵', others: '◦' }[m] ?? '◦')
-const paymentLabel= (m: string) => ({ pix: 'Pix', credit_card: 'Crédito', money: 'Dinheiro', others: 'Outros' }[m] ?? m)
+const closeModal = () => {
+  isModalOpen.value = false
+  isEditing.value = false
+  editingId.value = null
+  editingForm.value = {}
+}
 
-onMounted(async () => { await fetchAll(); await fetchCategories() })
+const openDeleteModal = (t: Transaction) => {
+  deleteTarget.value = t
+  isDeleteModalOpen.value = true
+}
+
+const clearFilters = () => {
+  filters.value = { search: '', type: '', categoryId: '', paymentMethod: '', dateFrom: '', dateTo: '' }
+}
+
+const fmt = formatCurrency
+
+onMounted(async () => {
+  await fetchAll()
+  await fetchCategories()
+})
 </script>

@@ -211,6 +211,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { Category, TransactionForm } from '@/types/finance'
+import { paymentMethodOptions } from '@/utils/formatters'
 
 const props = defineProps<{
   isOpen: boolean
@@ -224,12 +225,7 @@ const emit = defineEmits<{
   (e: 'submit', f: TransactionForm): void
 }>()
 
-const paymentMethods = [
-  { value: 'pix', label: 'Pix', icon: '⚡' },
-  { value: 'credit_card', label: 'Crédito', icon: '💳' },
-  { value: 'money', label: 'Dinheiro', icon: '💵' },
-  { value: 'others', label: 'Outros', icon: '◦'  },
-]
+const paymentMethods = paymentMethodOptions
 
 const categoryOpen = ref(false)
 const categoryRef  = ref<HTMLElement | null>(null)

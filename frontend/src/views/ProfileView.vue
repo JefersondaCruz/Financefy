@@ -17,6 +17,13 @@
         </div>
       </header>
 
+      <p
+        v-if="errorMessage"
+        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
+      >
+        {{ errorMessage }}
+      </p>
+
       <div class="bg-[#0D1526] border border-[#1E2D45] rounded-2xl p-6 flex items-center gap-5">
         <div class="w-16 h-16 rounded-2xl bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 flex items-center justify-center text-2xl font-bold text-[#4F8EF7] shrink-0">
           {{ initials }}
@@ -158,6 +165,9 @@
               <input v-model="deleteAccountPassword" type="password" placeholder="Sua senha"
                 class="bg-white/[0.04] border border-[#1E2D45] text-white text-[13px] placeholder-[#4A6080] px-3 py-2.5 rounded-xl outline-none focus:border-[#FF3D6B] transition-colors" />
             </div>
+            <p v-if="errorMessage" class="mb-4 text-left text-[12px] font-semibold text-[#FF3D6B]">
+              {{ errorMessage }}
+            </p>
             <div class="flex gap-3">
               <button class="flex-1 py-3 rounded-xl border border-[#1E2D45] bg-white/[0.04] text-[#4A6080] text-[13px] font-bold hover:bg-white/10 hover:text-white transition-all" @click="showDeleteAccount = false">Cancelar</button>
               <button
@@ -179,6 +189,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
+import { formatDate } from '@/utils/formatters'
 
 const auth = useAuthStore()
 
@@ -187,6 +198,7 @@ const savingProfile = ref(false)
 const savingPassword = ref(false)
 const showDeleteAccount = ref(false)
 const deleteAccountPassword = ref('')
+const errorMessage = ref('')
 
 const profileForm = ref({ name: '', email: '', created_at: '' })
 const passwordForm = ref({ current_password: '', password: '', password_confirmation: '' })
@@ -204,7 +216,7 @@ const initials = computed(() =>
 
 const memberSince = computed(() =>
   profileForm.value.created_at
-    ? new Date(profileForm.value.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    ? formatDate(profileForm.value.created_at, { month: 'long', year: 'numeric' })
     : ''
 )
 
@@ -228,19 +240,28 @@ const strengthLabel = computed(() => {
 })
 
 const fetchProfile = async () => {
-  try { const { data } = await api.get('/user'); profileForm.value = data }
-  catch (e) { console.error(e) }
+  errorMessage.value = ''
+  try {
+    const { data } = await api.get('/user')
+    profileForm.value = data
+  } catch {
+    errorMessage.value = 'Não foi possível carregar o perfil.'
+  }
 }
 
 const saveProfile = async () => {
-  savingProfile.value = true; profileMsg.value = null
+  savingProfile.value = true
+  profileMsg.value = null
+  errorMessage.value = ''
   try {
     await api.put('/user/profile', { name: profileForm.value.name, email: profileForm.value.email })
-    profileMsg.value = { type: 'success', text: '✓ Perfil atualizado com sucesso!' }
+    profileMsg.value = { type: 'success', text: 'Perfil atualizado com sucesso.' }
     setTimeout(() => { profileMsg.value = null }, 3000)
   } catch {
     profileMsg.value = { type: 'error', text: 'Erro ao atualizar perfil. Tente novamente.' }
-  } finally { savingProfile.value = false }
+  } finally {
+    savingProfile.value = false
+  }
 }
 
 const changePassword = async () => {
@@ -248,24 +269,28 @@ const changePassword = async () => {
     passwordMsg.value = { type: 'error', text: 'As senhas não coincidem.' }
     return
   }
-  savingPassword.value = true; passwordMsg.value = null
+  savingPassword.value = true
+  passwordMsg.value = null
+  errorMessage.value = ''
   try {
     await api.put('/user/password', passwordForm.value)
-    passwordMsg.value = { type: 'success', text: '✓ Senha alterada com sucesso!' }
+    passwordMsg.value = { type: 'success', text: 'Senha alterada com sucesso.' }
     passwordForm.value = { current_password: '', password: '', password_confirmation: '' }
     setTimeout(() => { passwordMsg.value = null }, 3000)
   } catch {
     passwordMsg.value = { type: 'error', text: 'Senha atual incorreta ou erro no servidor.' }
-  } finally { savingPassword.value = false }
+  } finally {
+    savingPassword.value = false
+  }
 }
 
 const deleteAccount = async () => {
+  errorMessage.value = ''
   try {
     await api.delete('/user', { data: { password: deleteAccountPassword.value } })
     auth.logout()
   } catch {
-    showDeleteAccount.value = false
-    deleteAccountPassword.value = ''
+    errorMessage.value = 'Não foi possível excluir a conta. Verifique sua senha e tente novamente.'
   }
 }
 

@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatCurrency } from '@/utils/formatters'
 
 const props = defineProps<{
   label: string
@@ -49,7 +50,5 @@ const props = defineProps<{
   variant: 'expense' | 'income' | 'balance'
 }>()
 
-const formattedValue = computed(() =>
-  new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(props.value))
-)
+const formattedValue = computed(() => formatCurrency(props.value))
 </script>

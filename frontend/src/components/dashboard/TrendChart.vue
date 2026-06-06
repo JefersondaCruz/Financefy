@@ -23,6 +23,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Transaction } from '@/types/finance'
+import { formatCurrency } from '@/utils/formatters'
 
 const props = defineProps<{ transactions: Transaction[] }>()
 
@@ -101,7 +102,7 @@ const renderChart = () => {
           padding: 12,
           titleColor: '#8CA4C6',
           bodyColor: '#E8EEFF',
-          callbacks: { label: (c) => `  ${c.dataset.label}: R$ ${Number(c.parsed.y).toFixed(2)}` },
+          callbacks: { label: (c) => `  ${c.dataset.label}: R$ ${formatCurrency(Number(c.parsed.y))}` },
         },
       },
       scales: {

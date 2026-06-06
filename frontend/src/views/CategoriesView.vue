@@ -70,6 +70,13 @@
         </div>
       </div>
 
+      <p
+        v-if="errorMessage"
+        class="rounded-xl border border-[#FF3D6B]/30 bg-[#FF3D6B]/10 px-4 py-3 text-[12px] font-semibold text-[#FF3D6B]"
+      >
+        {{ errorMessage }}
+      </p>
+
       <div v-if="loading" class="flex items-center justify-center py-20">
         <span class="text-[#4A6080] text-sm">Carregando categorias...</span>
       </div>
@@ -154,22 +161,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import type { Category, CategoryForm } from '@/types/finance'
 
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import CategoryModal from '@/components/modals/CategoryModal.vue'
 import DeleteModal from '@/components/modals/DeleteModal.vue'
-
-interface Category {
-  id: number
-  name: string
-  type: 'income' | 'expense'
-  user_id: number | null
-}
-
-interface CategoryForm {
-  name: string
-  type: 'income' | 'expense'
-}
 
 const isMenuOpen = ref(false)
 const isModalOpen = ref(false)
@@ -180,6 +176,7 @@ const isDeleteModalOpen = ref(false)
 const deleteTarget = ref<Category | null>(null)
 const categories = ref<Category[]>([])
 const loading = ref(false)
+const errorMessage = ref('')
 const search = ref('')
 const activeTab = ref<'all' | 'income' | 'expense'>('all')
 
@@ -201,28 +198,54 @@ const filteredCategories = computed(() => {
 
 const fetchCategories = async () => {
   loading.value = true
-  try { const { data } = await api.get('/categories'); categories.value = data }
-  catch (e) { console.error(e) }
-  finally { loading.value = false }
+  errorMessage.value = ''
+  try {
+    const { data } = await api.get('/categories')
+    categories.value = data
+  } catch {
+    errorMessage.value = 'Não foi possível carregar as categorias.'
+  } finally {
+    loading.value = false
+  }
 }
 
 const createCategory = async (form: CategoryForm) => {
-  try { await api.post('/categories', form); closeModal(); await fetchCategories() }
-  catch (e) { console.error(e) }
+  errorMessage.value = ''
+  try {
+    await api.post('/categories', form)
+    closeModal()
+    await fetchCategories()
+  } catch {
+    errorMessage.value = 'Não foi possível criar a categoria.'
+  }
 }
 
 const updateCategory = async (form: CategoryForm) => {
-  try { await api.put(`/categories/${editingId.value}`, form); closeModal(); await fetchCategories() }
-  catch (e) { console.error(e) }
+  errorMessage.value = ''
+  try {
+    await api.put(`/categories/${editingId.value}`, form)
+    closeModal()
+    await fetchCategories()
+  } catch {
+    errorMessage.value = 'Não foi possível atualizar a categoria.'
+  }
 }
 
 const confirmDelete = async () => {
   if (!deleteTarget.value) return
-  try { await api.delete(`/categories/${deleteTarget.value.id}`); closeDeleteModal(); await fetchCategories() }
-  catch (e) { console.error(e) }
+  errorMessage.value = ''
+  try {
+    await api.delete(`/categories/${deleteTarget.value.id}`)
+    closeDeleteModal()
+    await fetchCategories()
+  } catch {
+    errorMessage.value = 'Não foi possível excluir a categoria.'
+  }
 }
 
-const submitCategory = (form: CategoryForm) => isEditing.value ? updateCategory(form) : createCategory(form)
+const submitCategory = (form: CategoryForm) => {
+  return isEditing.value ? updateCategory(form) : createCategory(form)
+}
 
 const openModal = (cat?: Category) => {
   if (cat) {
@@ -237,9 +260,22 @@ const openModal = (cat?: Category) => {
   isModalOpen.value = true
 }
 
-const closeModal = () => { isModalOpen.value = false; isEditing.value = false; editingId.value = null; editingForm.value = {} }
-const openDeleteModal = (cat: Category) => { deleteTarget.value = cat; isDeleteModalOpen.value = true }
-const closeDeleteModal = () => { isDeleteModalOpen.value = false; deleteTarget.value = null }
+const closeModal = () => {
+  isModalOpen.value = false
+  isEditing.value = false
+  editingId.value = null
+  editingForm.value = {}
+}
+
+const openDeleteModal = (cat: Category) => {
+  deleteTarget.value = cat
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  deleteTarget.value = null
+}
 
 onMounted(fetchCategories)
 </script>

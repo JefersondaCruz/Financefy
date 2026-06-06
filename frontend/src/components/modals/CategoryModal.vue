@@ -97,11 +97,7 @@
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-
-interface CategoryForm {
-  name: string
-  type: 'income' | 'expense'
-}
+import type { CategoryForm } from '@/types/finance'
 
 const props = defineProps<{
   isOpen: boolean
