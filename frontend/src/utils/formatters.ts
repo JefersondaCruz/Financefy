@@ -4,6 +4,20 @@ export const formatCurrency = (value: number) =>
     maximumFractionDigits: 2,
   }).format(Math.abs(value))
 
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+
+export const parseDate = (value: string | Date) => {
+  if (value instanceof Date) return new Date(value)
+
+  const match = value.match(DATE_ONLY_PATTERN)
+  if (match) {
+    const [, year, month, day] = match
+    return new Date(Number(year), Number(month) - 1, Number(day))
+  }
+
+  return new Date(value)
+}
+
 export const formatDate = (
   date: string | Date,
   options: Intl.DateTimeFormatOptions = {
@@ -11,7 +25,7 @@ export const formatDate = (
     month: 'short',
     year: 'numeric',
   },
-) => new Date(date).toLocaleDateString('pt-BR', options)
+) => parseDate(date).toLocaleDateString('pt-BR', options)
 
 const paymentMethods = {
   pix: { label: 'Pix', icon: '⚡' },

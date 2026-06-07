@@ -28,19 +28,25 @@ class TransactionService extends BaseService
 
     public function store(array $data)
     {
-        $data['user_id'] = auth()->id()
-            ?? $this->userRepository->getByPhone($data['phone'])?->id
+        $phone = $data['phone'] ?? null;
+        $userId = auth()->id()
+            ?? ($phone ? $this->userRepository->getByPhone($phone)?->id : null)
             ?? throw new \Exception('Usuário não encontrado');
 
-        if (!isset($data['category_id']) && isset($data['category'])) {
+        $data['user_id'] = $userId;
 
-            $category = $this->categoryRepository->findByName($data['category'])
+        if (!empty($data['category_id'])) {
+            $data['category_id'] = $this->categoryRepository
+                ->findForUser((int) $data['category_id'], $userId)?->id
                 ?? throw new \Exception('Categoria não encontrada');
-
-            $data['category_id'] = $category->id;
         }
 
-        unset($data['category']);
+        if (empty($data['category_id']) && !empty($data['category'])) {
+            $data['category_id'] = $this->categoryRepository
+                ->findByNameForUser($data['category'], $userId)?->id;
+        }
+
+        unset($data['category'], $data['phone']);
 
         return new TransactionResource($this->transactionRepository->store($data)->load('category'));
     }

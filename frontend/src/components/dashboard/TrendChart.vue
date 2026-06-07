@@ -34,7 +34,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Transaction } from '@/types/finance'
-import { formatCurrency } from '@/utils/formatters'
+import { formatCurrency, parseDate } from '@/utils/formatters'
 
 const props = withDefaults(defineProps<{
   transactions: Transaction[]
@@ -59,7 +59,7 @@ let chart: Chart | null = null
 const chartData = computed(() => {
   const map: Record<string, { income: number; expense: number }> = {}
   props.transactions.forEach(t => {
-    const d = new Date(t.transaction_date)
+    const d = parseDate(t.transaction_date)
     const key = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`
     if (!map[key]) map[key] = { income: 0, expense: 0 }
     if (t.category?.type === 'income') map[key].income  += Number(t.amount)

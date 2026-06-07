@@ -41,17 +41,6 @@ services:
     networks:
       - backend_net
 
-  n8n:
-    image: n8nio/n8n:stable
-    container_name: n8n_app
-    restart: always
-    ports:
-      - "5678:5678"
-    volumes:
-      - n8n_data:/home/node/.n8n
-    networks:
-      - backend_net
-
   vue:
     build:
       context: ./frontend
@@ -69,7 +58,6 @@ services:
 
 volumes:
   postgres_data:
-  n8n_data:
 
 networks:
   backend_net:

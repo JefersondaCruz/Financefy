@@ -36,6 +36,17 @@ return [
     ],
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
+        'chatbot_model' => env('OPENAI_CHATBOT_MODEL', 'gpt-4o-mini'),
+        'timeout' => 30,
+        'base_url' => env('OPENAI_BASE_URL'),
+    ],
+    'chatbot' => [
+        'memory' => [
+            'connection' => 'default',
+            'key_template' => 'whatsapp_chatbot:{userId}',
+            'ttl' => (int) env('CHATBOT_MEMORY_TTL', 1500),
+            'max_messages' => (int) env('CHATBOT_MAX_MESSAGES', 10),
+        ],
     ],
     'waba' => [
         'verify_token' => env('WABA_VERIFY_TOKEN'),

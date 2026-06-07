@@ -4,17 +4,15 @@ namespace App\Http\Services;
 
 use App\Http\Repositories\UserRepository;
 use App\Http\Services\WhatsAppMessageService;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookService
 {
-    private const CHATBOT_ENDPOINT = 'http://n8n:5678/webhook/chatbot';
-
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly WhatsAppMessageService $messageService,
+        private readonly ChatbotConversationService $chatbotConversationService,
     ) {}
 
     public function verifyToken(string $mode, string $token, string $challenge): ?string
@@ -51,7 +49,7 @@ class WhatsAppWebhookService
                 return;
             }
 
-            $this->forwardToChatbot($phone, $text);
+            $this->replyWithChatbot($user, $phone, $text);
 
         } catch (\Throwable $e) {
             Log::error('[WABA] Erro ao processar payload.', [
@@ -76,26 +74,10 @@ class WhatsAppWebhookService
         );
     }
 
-    private function forwardToChatbot(string $phone, string $message): void
+    private function replyWithChatbot(User $user, string $phone, string $message): void
     {
-        try {
-            $response = Http::timeout(10)
-                ->post(self::CHATBOT_ENDPOINT, [
-                    'phone' => $phone,
-                    'message' => $message,
-                ]);
+        $reply = $this->chatbotConversationService->reply($user, $message);
 
-            if ($response->failed()) {
-                Log::error('[WABA] Chatbot retornou erro.', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                return;
-            }
-
-
-        } catch (ConnectionException $e) {
-            Log::error('[WABA] Falha de conexão com o chatbot.', ['error' => $e->getMessage()]);
-        }
+        $this->messageService->sendMessage($phone, $reply);
     }
 }
