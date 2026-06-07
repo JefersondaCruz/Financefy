@@ -13,17 +13,63 @@ class CategoryRepository extends BaseRepository
 
     public function findByName(string $name): ?Category
     {
-        return $this->model
-            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
-            ->first();
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return $this->findGlobalByName($name);
+        }
+
+        return $this->findByNameForUser($name, $userId);
     }
 
     public function index()
     {
-        return Category::where(function ($q) {
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return Category::whereNull('user_id')->orderBy('name')->get();
+        }
+
+        return $this->indexForUser($userId);
+    }
+
+    public function indexForUser(int $userId)
+    {
+        return Category::where(function ($q) use ($userId) {
             $q->whereNull('user_id')
-                ->orWhere('user_id', Auth::id());
+                ->orWhere('user_id', $userId);
         })->orderBy('name')->get();
+    }
+
+    public function findByNameForUser(string $name, int $userId): ?Category
+    {
+        return $this->model
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                    ->orWhereNull('user_id');
+            })
+            ->orderByRaw('CASE WHEN user_id = ? THEN 0 ELSE 1 END', [$userId])
+            ->first();
+    }
+
+    public function findForUser(int $id, int $userId): ?Category
+    {
+        return $this->model
+            ->where('id', $id)
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                    ->orWhereNull('user_id');
+            })
+            ->first();
+    }
+
+    private function findGlobalByName(string $name): ?Category
+    {
+        return $this->model
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->whereNull('user_id')
+            ->first();
     }
 
     public function store(array $data)

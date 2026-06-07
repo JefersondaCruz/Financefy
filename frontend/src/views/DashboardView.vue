@@ -217,7 +217,7 @@ import { ref, computed, onMounted } from 'vue'
 import { dashboardService } from '@/services/dashboardService'
 
 import type { Transaction, Category, TransactionForm, DateFilter, TransactionSummary } from '@/types/finance'
-import { formatCurrency } from '@/utils/formatters'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 import AppSidebar from '@/components/dashboard/AppSidebar.vue'
 import AppPageHeader from '@/components/dashboard/AppPageHeader.vue'
@@ -516,7 +516,7 @@ const prevPage = () => {
 }
 
 const formatDateLabel = (value: string) =>
-  new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', {
+  formatDate(value, {
     day: '2-digit',
     month: 'short',
   })

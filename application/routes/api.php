@@ -34,12 +34,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/ai/conversation', [AiController::class, 'clear']);
 });
 
-Route::group(['prefix' => 'chatbot', 'middleware' => 'resolve.chatbot.user'], function () {
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/transactions', [TransactionController::class, 'get']);
-    Route::post('/transactions', [TransactionController::class, 'store']);
-});
-
 Route::group(['prefix' => 'webhook'], function () {
     Route::get('/waba',  [WebhookController::class, 'verify']);
     Route::post('/waba', [WebhookController::class, 'handle']);

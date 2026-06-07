@@ -13,9 +13,25 @@ class TransactionRepository extends BaseRepository
 
     public function getAllWithCategory(int $perPage = 10, ?string $startDate = null, ?string $endDate = null, array $filters = [])
     {
+        return $this->getAllWithCategoryForUser(
+            auth()->id(),
+            $perPage,
+            $startDate,
+            $endDate,
+            $filters
+        );
+    }
+
+    public function getAllWithCategoryForUser(
+        int $userId,
+        int $perPage = 10,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        array $filters = []
+    ) {
         $query = $this->model
             ->with('category')
-            ->where('user_id', auth()->id());
+            ->where('user_id', $userId);
 
         $this->applyPeriod($query, $startDate, $endDate);
         $this->applyFilters($query, $filters);
@@ -41,9 +57,14 @@ class TransactionRepository extends BaseRepository
 
     public function getSummary(string $startDate, string $endDate, array $filters = []): array
     {
+        return $this->getSummaryForUser(auth()->id(), $startDate, $endDate, $filters);
+    }
+
+    public function getSummaryForUser(int $userId, string $startDate, string $endDate, array $filters = []): array
+    {
         $query = $this->model
             ->with('category')
-            ->where('user_id', auth()->id())
+            ->where('user_id', $userId)
             ->whereBetween('transaction_date', [
                 Carbon::parse($startDate)->startOfDay(),
                 Carbon::parse($endDate)->endOfDay()
@@ -83,6 +104,13 @@ class TransactionRepository extends BaseRepository
             'recurring_count' => $transactions->where('is_recurring', true)->count(),
             'category_ranking' => $ranking,
         ];
+    }
+
+    public function storeForUser(int $userId, array $data)
+    {
+        $data['user_id'] = $userId;
+
+        return $this->store($data);
     }
 
     private function applyPeriod($query, ?string $startDate, ?string $endDate): void
