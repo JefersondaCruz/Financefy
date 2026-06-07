@@ -3,7 +3,7 @@ services:
   application:
     build:
       context: ./application
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     container_name: application_app
     env_file:
       - ./application/.env
@@ -44,7 +44,7 @@ services:
   vue:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     container_name: vue_app
     ports:
       - "5173:5173"
